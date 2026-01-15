@@ -6,7 +6,7 @@
 
 2. Read Chapter 1 and Chapter 2.1 of Bayes Rules <https://www.bayesrulesbook.com/>.
 
-
+ 
 
 
 
