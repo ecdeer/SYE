@@ -1,0 +1,447 @@
+---
+title: "Data Exploration"
+author: "Emma Deering"
+format: html
+---
+
+## Load in data
+```{r}
+library(readr)
+clams <- read_csv("data/clams_clean.csv")
+```
+
+# Build growth plots 
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+ggplot(data = clams, aes(x = growth_period, y = growth, group = name)) +
+         geom_line() +
+         facet_wrap(vars(location))
+  
+```
+
+
+## Blacklake clams growth curves
+```{r}
+clams_blacklake <- clams |> filter(location == "BlackLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_blacklake, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_blacklake, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Briggs clams growth curves
+```{r}
+clams_briggs <- clams |> filter(location == "Briggs") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_briggs, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_briggs, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Colton Canoe Launch clams growth curves
+```{r}
+clams_colton <- clams |> filter(location == "ColtonCanoeLaunch") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_colton, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_colton, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Blacklake clams growth curves
+```{r}
+clams_coopersfalls <- clams |> filter(location == "CoopersFalls") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_coopersfalls, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_coopersfalls, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## DeKalb clams growth curves
+```{r}
+clams_dekalb <- clams |> filter(location == "DeKalb") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_dekalb, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_dekalb, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## EelWeir clams growth curves
+```{r}
+clams_eelweir <- clams |> filter(location == "EelWeir") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_eelweir, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_eelweir, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## GovPark clams growth curves
+```{r}
+clams_govpark <- clams |> filter(location == "GovPark") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_govpark, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_govpark, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Heuvelton Boat Launch clams growth curves
+```{r}
+clams_heuvelton <- clams |> filter(location == "HeuveltonBoatLaunch") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_heuvelton, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_heuvelton, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Horse Shoe Lake clams growth curves
+```{r}
+clams_horseshoe <- clams |> filter(location == "HorseShoeLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_horseshoe, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_horseshoe, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Lake Clear clams growth curves
+```{r}
+clams_clear <- clams |> filter(location == "LakeClear") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_clear, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_clear, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Lake Flower clams growth curves
+```{r}
+clams_flower <- clams |> filter(location == "LakeFlower") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_flower, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_flower, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+##Lehman Park clams growth curves
+```{r}
+clams_lehman <- clams |> filter(location == "LehamnPark") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_lehman, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_lehman, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Long Lake clams growth curves
+```{r}
+clams_long <- clams |> filter(location == "LongLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_long, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_long, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Massena clams growth curves
+```{r}
+clams_massena <- clams |> filter(location == "Massena") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_massena, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_massena, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Mirror Lake clams growth curves
+```{r}
+clams_mirror <- clams |> filter(location == "MirrorLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_mirror, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_mirror, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Mountain Lake clams growth curves
+```{r}
+clams_mountain <- clams |> filter(location == "MountainLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_mountain, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_mountain, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Norfolk clams growth curves
+```{r}
+clams_norfolk <- clams |> filter(location == "Norfolk") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_norfolk, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_norfolk, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Norfolk SM clams growth curves
+```{r}
+clams_norfolkSM <- clams |> filter(location == "NorfolkSM") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_norfolkSM, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_norfolkSM, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Norwood Beach clams growth curves
+```{r}
+clams_norwood <- clams |> filter(location == "NorwoodBeach") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_norwood, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_norwood, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Piercefield clams growth curves
+```{r}
+clams_piercefield <- clams |> filter(location == "Piercefield") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_piercefield, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_piercefield, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Pine Street clams growth curves
+```{r}
+clams_pine <- clams |> filter(location == "PineStreet") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_pine, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_pine, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Raquette Pond clams growth curves
+```{r}
+clams_raquette <- clams |> filter(location == "RaquettePond") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_raquette, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_raquette, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## South Colton Bridge clams growth curves
+```{r}
+clams_southcolton <- clams |> filter(location == "SouthColtonBridge") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_southcolton, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_southcolton, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Tupper Horse Shoe Lake clams growth curves
+```{r}
+clams_tupperhorseshoe <- clams |> filter(location == "TupperHorseShoeLake") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_tupperhorseshoe, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_tupperhorseshoe, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+
+## Tupper Lake North clams growth curves
+```{r}
+clams_tuppernorth <- clams |> filter(location == "TupperLakeNorth") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_tuppernorth, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_tuppernorth, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
+
+## Union Falls Pond clams growth curves
+```{r}
+clams_union <- clams |> filter(location == "UnionFallsPond") |> group_by(name)
+
+# Multiple Graphs
+ggplot(data=clams_union, aes(x = growth_period, y = growth)) + 
+  geom_line() +
+  facet_wrap(vars(name))
+
+# Single Graphs
+ggplot(clams_union, aes(x = growth_period, y = growth, 
+                            color = name, group = name)) + 
+  geom_line()
+
+```
