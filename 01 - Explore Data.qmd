@@ -21,7 +21,6 @@ ggplot(data = clams, aes(x = growth_period, y = growth, group = name)) +
   
 ```
 
-
 ## Blacklake clams growth curves
 ```{r}
 clams_blacklake <- clams |> filter(location == "BlackLake") |> group_by(name)
