@@ -10,7 +10,7 @@ library(readr)
 clams <- read_csv("data/clams_clean.csv")
 ```
 
-# Build growth plots 
+## Build growth plots 
 ```{r}
 library(tidyverse)
 library(ggplot2)
@@ -69,17 +69,17 @@ ggplot(clams_colton, aes(x = growth_period, y = growth,
 
 ```
 
-## Blacklake clams growth curves
+## Copper Falls clams growth curves
 ```{r}
-clams_coopersfalls <- clams |> filter(location == "CoopersFalls") |> group_by(name)
+clams_coppersfalls <- clams |> filter(location == "CoppersFalls") |> group_by(name)
 
 # Multiple Graphs
-ggplot(data=clams_coopersfalls, aes(x = growth_period, y = growth)) + 
+ggplot(data=clams_coppersfalls, aes(x = growth_period, y = growth)) + 
   geom_line() +
   facet_wrap(vars(name))
 
 # Single Graphs
-ggplot(clams_coopersfalls, aes(x = growth_period, y = growth, 
+ggplot(clams_coppersfalls, aes(x = growth_period, y = growth, 
                             color = name, group = name)) + 
   geom_line()
 
