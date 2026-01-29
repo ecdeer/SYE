@@ -1,0 +1,163 @@
+---
+title: "02 - Von Bertanfly"
+author: "Emma Deering"
+format: html
+---
+
+Read in Data:
+```{r}
+library(readr)
+clams <- read_csv("data/clams_clean.csv")
+View(clams)
+```
+
+Remove negative values:
+```{r}
+library(dplyr)
+library(ggplot2)
+clams <- clams |> filter(growth > 0)
+
+# removes negative values from Coopers Falls, Lake Clear, Mirror Lake
+```
+
+Try Von Bertanfly Models:
+```{r}
+# on all of the clams
+# just trying out the syntax to understand it
+
+# define the function
+von_bert_function <- function(t, max_l, k, b) {
+  max_l * (1 - exp(-k * (t - b)))
+}
+
+first_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data  = clams,
+  start = list(max_l = max(clams$Length), k = 0.1, b = 0))
+
+```
+
+
+Try plotting it:
+
+BLACK LAKE:
+```{r}
+# fit nls model
+blacklake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data  = clams,
+  start = list(max_l = max(clams$Length), k = 0.1, b = 0))
+
+# predict values to plot
+# and filter by desired lake
+clams_blacklake <- clams |> 
+  mutate(predicted_length = predict(blacklake_vb)) |>
+  filter(location == "BlackLake") |> 
+  group_by(name) 
+
+# ggplot to plot it and visualize
+blacklake <- ggplot(data = clams_blacklake, aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length), color = "lightgreen", linewidth = 2) +
+  theme_bw() + 
+  labs(
+    x = "Growth Period", 
+    y = "Length",
+    title = "Growth Curve of Black Lake Clams"
+  )
+
+blacklake
+```
+
+GOV PARK:
+```{r}
+# fit nls model
+govpark_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data  = clams,
+  start = list(max_l = max(clams$Length), k = 0.1, b = 0))
+
+# predict values to plot
+# and filter by desired lake
+clams_govpark <- clams |> 
+  mutate(predicted_length = predict(govpark_vb)) |>
+  filter(location == "GovPark") |> 
+  group_by(name) 
+
+# ggplot to plot it and visualize
+govpark <- ggplot(data = clams_govpark, aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length), color = "gold", linewidth = 2) +
+  theme_bw() + 
+  labs(
+    x = "Growth Period", 
+    y = "Length",
+    title = "Growth Curve of Gov Park Clams"
+  )
+
+govpark
+```
+
+LONG LAKE:
+```{r}
+# fit nls model
+longlake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data  = clams,
+  start = list(max_l = max(clams$Length), k = 0.1, b = 0))
+
+# predict values to plot
+# and filter by desired lake
+clams_longlake <- clams |> 
+  mutate(predicted_length = predict(longlake_vb)) |>
+  filter(location == "LongLake") |> 
+  group_by(name) 
+
+# ggplot to plot it and visualize
+longlake <- ggplot(data = clams_longlake, aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length), color = "orange", linewidth = 2) +
+  theme_bw() + 
+  labs(
+    x = "Growth Period", 
+    y = "Length",
+    title = "Growth Curve of Long Lake Clams"
+  )
+
+longlake
+```
+
+PINE STREET:
+```{r}
+# fit nls model
+pinestreet_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data  = clams,
+  start = list(max_l = max(clams$Length), k = 0.1, b = 0))
+
+# predict values to plot
+# and filter by desired lake
+clams_pinestreet <- clams |> 
+  mutate(predicted_length = predict(pinestreet_vb)) |>
+  filter(location == "PineStreet") |> 
+  group_by(name) 
+
+# ggplot to plot it and visualize
+pinestreet <- ggplot(data = clams_pinestreet, aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length), color = "magenta", linewidth = 2) +
+  theme_bw() + 
+  labs(
+    x = "Growth Period", 
+    y = "Length",
+    title = "Growth Curve of Pine Street Clams"
+  )
+
+pinestreet
+```
+
+Compare the growth curves:
+```{r}
+# extra: learn to put all the graphs together on one screen so that we can compare 
+# the curves. Easier to look for differences.
+
+library(patchwork)
+
+(blacklake | pinestreet) / (govpark | longlake)
+```
+
