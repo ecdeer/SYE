@@ -1,5 +1,11 @@
 ## Task List
 
+### For February 5
+
+1. Read Chapter 6 of Bayes Rules <https://www.bayesrulesbook.com/> (skim through the Stan parts, which we won't use).
+
+2. Fit the growth curve to each (if AI can help map through or to some) of the locations and see if there is anything you notice comparing Lakes and Rivers.
+
 ### For January 29
 
 0. remove negative growths (and keep track).
