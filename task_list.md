@@ -1,5 +1,13 @@
 ## Task List
 
+### For February 12
+
+1. Change code so that they all have their individual fits and use Judith's data to compare. Combine with bind_rows() and then facet by location to compare.
+
+2. Read 7.1 through 7.4.
+
+3. MH: Send Emma regression MCMC algorithm.
+
 ### For February 5
 
 1. Read Chapter 6 of Bayes Rules <https://www.bayesrulesbook.com/> (skim through the Stan parts, which we won't use).
