@@ -1,0 +1,761 @@
+---
+title: "03 - Individual Fits"
+author: "Emma Deering"
+format: html
+---
+
+Read in Data:
+```{r}
+library(readr)
+clams <- read_csv("data/clams_clean.csv")
+View(clams)
+```
+
+Remove negative values:
+```{r}
+library(dplyr)
+library(ggplot2)
+clams <- clams |> filter(growth > 0)
+
+# removes negative values from Coopers Falls, Lake Clear, Mirror Lake
+```
+
+List of all the Water Bodies:
+```{r}
+clams |> group_by(location) |> summarise(min(growth_period))
+```
+
+Black Lake: 
+```{r}
+clams_blacklake <- clams |>
+  filter(location == "BlackLake") |>
+  group_by(name)
+
+blacklake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_blacklake,
+  start = list(max_l = max(clams_blacklake$Length), k = 0.1, b = 0))
+
+predict_blacklake <- clams_blacklake |>
+  ungroup() |>
+  mutate(predicted_length = predict(blacklake_vb)) 
+
+blacklake <- ggplot(predict_blacklake,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "lightgreen", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of BLack Lake Clams")
+
+blacklake
+```
+
+Briggs:
+```{r}
+clams_briggs <- clams |>
+  filter(location == "Briggs") |>
+  group_by(name)
+
+briggs_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_briggs,
+  start = list(max_l = max(clams_briggs$Length), k = 0.1, b = 0))
+
+predict_briggs <- clams_briggs |>
+  ungroup() |>
+  mutate(predicted_length = predict(briggs_vb)) 
+
+briggs <- ggplot(predict_briggs,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "green", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Briggs Clams")
+
+briggs
+```
+
+Colton Canoe Launch:
+```{r}
+clams_colton <- clams |>
+  filter(location == "ColtonCanoeLaunch") |>
+  group_by(name)
+
+colton_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_colton,
+  start = list(max_l = max(clams_colton$Length), k = 0.1, b = 0))
+
+predict_colton <- clams_colton |>
+  ungroup() |>
+  mutate(predicted_length = predict(colton_vb)) 
+
+colton <- ggplot(predict_colton,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "magenta", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Colton Canoe Launch Clams")
+
+colton
+```
+
+Coppers Falls:
+```{r}
+clams_copper <- clams |>
+  filter(location == "CoppersFalls") |>
+  group_by(name)
+
+copper_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_copper,
+  start = list(max_l = max(clams_copper$Length), k = 0.1, b = 0))
+
+predict_copper <- clams_copper |>
+  ungroup() |>
+  mutate(predicted_length = predict(copper_vb)) 
+
+copper <- ggplot(predict_copper,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "gold", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Coppers Falls Clams")
+
+copper
+```
+
+De Kalb:
+```{r}
+clams_dekalb <- clams |>
+  filter(location == "DeKalb") |>
+  group_by(name)
+
+dekalb_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_dekalb,
+  start = list(max_l = max(clams_dekalb$Length), k = 0.1, b = 0))
+
+predict_dekalb <- clams_dekalb |>
+  ungroup() |>
+  mutate(predicted_length = predict(dekalb_vb)) 
+
+dekalb <- ggplot(predict_dekalb,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkgreen", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of De Kalb Clams")
+
+dekalb
+
+```
+
+Eel Weir:
+```{r}
+clams_eelweir <- clams |>
+  filter(location == "EelWeir") |>
+  group_by(name)
+
+eelweir_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_eelweir,
+  start = list(max_l = max(clams_eelweir$Length), k = 0.1, b = 0))
+
+predict_eelweir <- clams_eelweir |>
+  ungroup() |>
+  mutate(predicted_length = predict(eelweir_vb)) 
+
+eelweir <- ggplot(predict_eelweir,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "blue", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Eel Weir Clams")
+
+eelweir
+
+```
+
+Gov Park:
+```{r}
+clams_govpark <- clams |>
+  filter(location == "GovPark") |>
+  group_by(name)
+
+govpark_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_govpark,
+  start = list(max_l = max(clams_govpark$Length), k = 0.1, b = 0))
+
+predict_govpark <- clams_govpark |>
+  ungroup() |>
+  mutate(predicted_length = predict(govpark_vb)) 
+
+govpark <- ggplot(predict_govpark,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "purple", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Gov Park Clams")
+
+govpark
+
+```
+
+Heuvelton Boat Launch:
+```{r}
+clams_heuvelton <- clams |>
+  filter(location == "HeuveltonBoatLaunch") |>
+  group_by(name)
+
+heuvelton_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_heuvelton,
+  start = list(max_l = max(clams_heuvelton$Length), k = 0.1, b = 0))
+
+predict_heuvelton <- clams_heuvelton |>
+  ungroup() |>
+  mutate(predicted_length = predict(heuvelton_vb)) 
+
+heuvelton <- ggplot(predict_heuvelton,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "orange", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Heuvelton Boat Launch Clams")
+
+heuvelton
+
+```
+
+Horse Shoe Lake:
+```{r}
+clams_horseshoe <- clams |>
+  filter(location == "HorseShoeLake") |>
+  group_by(name)
+
+horseshoe_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_horseshoe,
+  start = list(max_l = max(clams_horseshoe$Length), k = 0.1, b = 0))
+
+predict_horseshoe <- clams_horseshoe |>
+  ungroup() |>
+  mutate(predicted_length = predict(horseshoe_vb)) 
+
+horseshoe <- ggplot(predict_horseshoe,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "brown", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Horse Shoe Lake Clams")
+
+horseshoe
+
+```
+
+Lake Clear:
+```{r}
+clams_lakeclear <- clams |>
+  filter(location == "LakeClear") |>
+  group_by(name)
+
+lakeclear_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lakeclear,
+  start = list(max_l = max(clams_lakeclear$Length), k = 0.1, b = 0))
+
+predict_lakeclear <- clams_lakeclear |>
+  ungroup() |>
+  mutate(predicted_length = predict(lakeclear_vb)) 
+
+lakeclear <- ggplot(predict_lakeclear,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "aquamarine", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Lake Clear Clams")
+
+lakeclear
+
+```
+
+Lake Flower:
+```{r}
+clams_lakeflower <- clams |>
+  filter(location == "LakeFlower") |>
+  group_by(name)
+
+lakeflower_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lakeflower,
+  start = list(max_l = max(clams_lakeflower$Length), k = 0.1, b = 0))
+
+predict_lakeflower <- clams_lakeflower |>
+  ungroup() |>
+  mutate(predicted_length = predict(lakeflower_vb)) 
+
+lakeflower <- ggplot(predict_lakeflower,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkseagreen", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Lake Flower Clams")
+
+lakeflower
+
+```
+
+Lehman Park:
+```{r}
+clams_lehman <- clams |>
+  filter(location == "LehmanPark") |>
+  group_by(name)
+
+lehman_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lehman,
+  start = list(max_l = max(clams_lehman$Length), k = 0.1, b = 0))
+
+predict_lehman <- clams_lehman |>
+  ungroup() |>
+  mutate(predicted_length = predict(lehman_vb)) 
+
+lehman <- ggplot(predict_lehman,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "steelblue", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Lehman Park Clams")
+
+lehman
+
+```
+
+Long Lake:
+```{r}
+clams_longlake <- clams |>
+  filter(location == "LongLake") |>
+  group_by(name)
+
+longlake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_longlake,
+  start = list(max_l = max(clams_longlake$Length), k = 0.1, b = 0))
+
+predict_longlake <- clams_longlake |>
+  ungroup() |>
+  mutate(predicted_length = predict(longlake_vb)) 
+
+longlake <- ggplot(predict_longlake,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkorchid", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Long Lake Clams")
+
+longlake
+
+```
+
+Massena:
+```{r}
+clams_massena <- clams |>
+  filter(location == "Massena") |>
+  group_by(name)
+
+massena_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_massena,
+  start = list(max_l = max(clams_massena$Length), k = 0.1, b = 0))
+
+predict_massena <- clams_massena |>
+  ungroup() |>
+  mutate(predicted_length = predict(massena_vb)) 
+
+massena <- ggplot(predict_massena,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkorange", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Massena Clams")
+
+massena
+
+```
+
+Mirror Lake:
+```{r}
+clams_mirror <- clams |>
+  filter(location == "MirrorLake") |>
+  group_by(name)
+
+mirror_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_mirror,
+  start = list(max_l = max(clams_mirror$Length), k = 0.1, b = 0))
+
+predict_mirror <- clams_mirror |>
+  ungroup() |>
+  mutate(predicted_length = predict(mirror_vb)) 
+
+mirror <- ggplot(predict_mirror,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "hotpink", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Mirror Lake Clams")
+
+mirror
+
+```
+
+Mountain Lake:
+```{r}
+clams_mountain <- clams |>
+  filter(location == "MountainLake") |>
+  group_by(name)
+
+mountain_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_mountain,
+  start = list(max_l = max(clams_mountain$Length), k = 0.1, b = 0))
+
+predict_mountain <- clams_mountain |>
+  ungroup() |>
+  mutate(predicted_length = predict(mountain_vb)) 
+
+mountain <- ggplot(predict_mountain,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "navy", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Mountain Lake Clams")
+
+mountain
+
+```
+
+Norfolk:
+```{r}
+clams_norfolk <- clams |>
+  filter(location == "Norfolk") |>
+  group_by(name)
+
+norfolk_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norfolk,
+  start = list(max_l = max(clams_norfolk$Length), k = 0.1, b = 0))
+
+predict_norfolk <- clams_norfolk |>
+  ungroup() |>
+  mutate(predicted_length = predict(norfolk_vb)) 
+
+norfolk <- ggplot(predict_norfolk,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkcyan", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Norfolk Clams")
+
+norfolk
+
+```
+
+Norfolk SM:
+```{r}
+clams_norfolksm <- clams |>
+  filter(location == "NorfolkSM") |>
+  group_by(name)
+
+norfolksm_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norfolksm,
+  start = list(max_l = max(clams_norfolksm$Length), k = 0.1, b = 0))
+
+predict_norfolksm <- clams_norfolksm |>
+  ungroup() |>
+  mutate(predicted_length = predict(norfolksm_vb)) 
+
+norfolksm <- ggplot(predict_norfolksm,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "goldenrod", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Norfolk SM Clams")
+
+norfolksm
+
+```
+
+Norwood Beach:
+```{r}
+clams_norwood <- clams |>
+  filter(location == "NorwoodBeach") |>
+  group_by(name)
+
+norwood_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norwood,
+  start = list(max_l = max(clams_norwood$Length), k = 0.1, b = 0))
+
+predict_norwood <- clams_norwood |>
+  ungroup() |>
+  mutate(predicted_length = predict(norwood_vb)) 
+
+norwood <- ggplot(predict_norwood,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkmagenta", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Norwood Beach Clams")
+
+norwood
+
+```
+
+Piercefield:
+```{r}
+clams_piercefield <- clams |>
+  filter(location == "Piercefield") |>
+  group_by(name)
+
+piercefield_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_piercefield,
+  start = list(max_l = max(clams_piercefield$Length), k = 0.1, b = 0))
+
+predict_piercefield <- clams_piercefield |>
+  ungroup() |>
+  mutate(predicted_length = predict(piercefield_vb)) 
+
+piercefield <- ggplot(predict_piercefield,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkslateblue", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Piercefield Clams")
+
+piercefield
+
+```
+
+Pine Street:
+```{r}
+clams_pinestreet <- clams |>
+  filter(location == "PineStreet") |>
+  group_by(name)
+
+pinestreet_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_pinestreet,
+  start = list(max_l = max(clams_pinestreet$Length), k = 0.1, b = 0))
+
+predict_pinestreet <- clams_pinestreet |>
+  ungroup() |>
+  mutate(predicted_length = predict(pinestreet_vb)) 
+
+pinestreet <- ggplot(predict_pinestreet,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "forestgreen", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Pine Street Clams")
+
+pinestreet
+
+```
+
+Raquette Pond:
+```{r}
+clams_raquette <- clams |>
+  filter(location == "RaquettePond") |>
+  group_by(name)
+
+raquette_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_raquette,
+  start = list(max_l = max(clams_raquette$Length), k = 0.1, b = 0))
+
+predict_raquette <- clams_raquette |>
+  ungroup() |>
+  mutate(predicted_length = predict(raquette_vb)) 
+
+raquette <- ggplot(predict_raquette,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkgoldenrod", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Raquette Pond Clams")
+
+raquette
+
+```
+
+Tupper Horse Shoe Lake:
+```{r}
+clams_tupperhorseshoe <- clams |>
+  filter(location == "TupperHorseShoeLake") |>
+  group_by(name)
+
+tupperhorseshoe_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_tupperhorseshoe,
+  start = list(max_l = max(clams_tupperhorseshoe$Length), k = 0.1, b = 0))
+
+predict_tupperhorseshoe <- clams_tupperhorseshoe |>
+  ungroup() |>
+  mutate(predicted_length = predict(tupperhorseshoe_vb)) 
+
+tupperhorseshoe <- ggplot(predict_tupperhorseshoe,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "maroon3", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Tupper Horse Shoe Lake Clams")
+
+tupperhorseshoe
+
+```
+
+
+Tupper Lake North:
+```{r}
+clams_tupperlakenorth <- clams |>
+  filter(location == "TupperLakeNorth") |>
+  group_by(name)
+
+tupperlakenorth_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_tupperlakenorth,
+  start = list(max_l = max(clams_tupperlakenorth$Length), k = 0.1, b = 0))
+
+predict_tupperlakenorth <- clams_tupperlakenorth |>
+  ungroup() |>
+  mutate(predicted_length = predict(tupperlakenorth_vb)) 
+
+tupperlakenorth <- ggplot(predict_tupperlakenorth,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "slateblue", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Tupper Lake North Clams")
+
+tupperlakenorth
+
+```
+
+South Colton Bridge: 
+```{r}
+clams_southcoltonbridge <- clams |>
+  filter(location == "SouthColtonBridge") |>
+  group_by(name)
+
+southcoltonbridge_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_southcoltonbridge,
+  start = list(max_l = max(clams_southcoltonbridge$Length), k = 0.1, b = 0))
+
+predict_southcoltonbridge <- clams_southcoltonbridge |>
+  ungroup() |>
+  mutate(predicted_length = predict(southcoltonbridge_vb)) 
+
+southcoltonbridge <- ggplot(predict_southcoltonbridge,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "yellow", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of South Colton Bridge Clams")
+
+southcoltonbridge
+```
+
+Union Falls Pond: 
+```{r}
+clams_unionfallspond <- clams |>
+  filter(location == "UnionFallsPond") |>
+  group_by(name)
+
+unionfallspond_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_unionfallspond,
+  start = list(max_l = max(clams_unionfallspond$Length), k = 0.1, b = 0))
+
+predict_unionfallspond <- clams_unionfallspond |>
+  ungroup() |>
+  mutate(predicted_length = predict(unionfallspond_vb)) 
+
+unionfallspond <- ggplot(predict_unionfallspond,
+                          aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "mediumvioletred", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Union Falls Pond Clams")
+
+unionfallspond
+```
+
+# Ask - why bind rows instead of left join
+
+Read Data and Left Join: 
+```{r}
+library(readxl)
+covariate_data <- read_excel("data/covariate_data.xlsx")
+
+clams <- clams |> ungroup()
+
+clams_total <- clams |> left_join(covariate_data, by = "location")
+clams_total
+```
+
+Divide by Lake/River:
+```{r}
+clams_lakes <- clams_total |> filter(body == "L")
+clams_rivers <- clams_total |> filter(body == "R")
+```
+
+Plot: 
+# here they are not on the same scale, so it makes it hard to compare
+
+```{r}
+covariate_data |> filter(body == "L")
+
+library(patchwork)
+
+(blacklake + horseshoe + lakeclear)  /
+(lakeflower + longlake) /
+(mirror + raquette + tupperhorseshoe) /
+(tupperlakenorth + unionfallspond)
+```
+
+```{r}
+covariate_data |> filter(body == "R")
+```
+
