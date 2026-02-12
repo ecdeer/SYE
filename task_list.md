@@ -1,5 +1,11 @@
 ## Task List
 
+### For February 17
+
+1. bind_rows() to combine the prediction data, then join with the environmental data, then facet to make the plot to compare (group aesthetic for the location).
+
+2. Work through MCMC algorithm (fixing b and k with a flat prior for l_max) until you get stuck (if you get stuck).
+
 ### For February 12
 
 1. Change code so that they all have their individual fits and use Judith's data to compare. Combine with bind_rows() and then facet by location to compare.
