@@ -1,10 +1,12 @@
 ## Task List
 
-### For February 17
+### For February 26
 
 1. bind_rows() to combine the prediction data, then join with the environmental data, then facet to make the plot to compare (group aesthetic for the location).
 
 2. Work through MCMC algorithm (fixing b and k with a flat prior for l_max) until you get stuck (if you get stuck).
+
+3. Start a write-up that includes an introduction to the data, an introduction to the growth model we are using, an introduction to Bayesian statistics, and some data exploration (incorporating the growth model). You should do this write-up in Quarto: don't worry about the formatting yet- just get some thoughts down while they are fresh!
 
 ### For February 12
 
