@@ -722,17 +722,14 @@ unionfallspond <- ggplot(predict_unionfallspond,
 unionfallspond
 ```
 
-# Ask - why bind rows instead of left join
+________________________________________________________________________________________________
 
-Read Data and Left Join: 
+ Read in lakes and rivers data
 ```{r}
+# Lakes and Rivers Data
 library(readxl)
 covariate_data <- read_excel("data/covariate_data.xlsx")
-
-clams <- clams |> ungroup()
-
-clams_total <- clams |> left_join(covariate_data, by = "location")
-clams_total
+covariate_data
 ```
 
 Divide by Lake/River:
@@ -741,21 +738,30 @@ clams_lakes <- clams_total |> filter(body == "L")
 clams_rivers <- clams_total |> filter(body == "R")
 ```
 
-Plot: 
-# here they are not on the same scale, so it makes it hard to compare
 
 ```{r}
-covariate_data |> filter(body == "L")
+# Bind growth predictions into one data set
+predictions <- bind_rows(predict_unionfallspond, predict_southcoltonbridge, predict_tupperlakenorth, predict_tupperhorseshoe, predict_raquette, predict_pinestreet, predict_piercefield, predict_norwood, predict_norfolk, predict_norfolksm, predict_mountain, predict_mirror, predict_massena, predict_longlake, predict_lehman, predict_lakeclear, predict_lakeflower, predict_horseshoe, predict_heuvelton, predict_govpark, predict_eelweir, predict_dekalb, predict_copper, predict_colton, predict_briggs, predict_blacklake, predict_birggs)
 
-library(patchwork)
+predictions
 
-(blacklake + horseshoe + lakeclear)  /
-(lakeflower + longlake) /
-(mirror + raquette + tupperhorseshoe) /
-(tupperlakenorth + unionfallspond)
+# add with lake/river data
+clams_predictions_waterbody <- predictions |> left_join(covariate_data, by = "location")
+
+clams_predictions_waterbody
 ```
 
 ```{r}
-covariate_data |> filter(body == "R")
+# plot to compare between lakes and rivers
+
+ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length), linewidth = 2) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length", title = "Growth Curves by Lakes and Rivers") +
+  facet_wrap(~body) + 
+  geom_smooth()
+
 ```
 
+It appears rivers have more standard growth compared to lakes. This is likely due to currents. clams are mostly filter feeders and are reliant on currents to bring them food. 
