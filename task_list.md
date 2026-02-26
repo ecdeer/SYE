@@ -1,5 +1,13 @@
 ## Task List
 
+### For March 3
+
+1. Add a picture or two of the growth model.
+
+2. Flesh out the rest of Data Exploration.
+
+3. Work through MCMC algorithm (fixing b and k with a flat prior for l_max) until you get stuck (if you get stuck).
+
 ### For February 26
 
 1. bind_rows() to combine the prediction data, then join with the environmental data, then facet to make the plot to compare (group aesthetic for the location).
