@@ -1,0 +1,62 @@
+---
+title: "Write Up"
+author: "Emma Deering"
+format: html
+---
+
+**Introduction to Data:**
+
+- Clams grow through a process called accretion, where every growing period their shells expand by adding new material to the outer edge. This creates a new visible ring around the shell. The number and thickness of these rings depend on a variety of factors, such as climate, food availability, and water conditions. 
+
+- These rings are preserved in fossils, allowing geologists and paleontologists to make conclusions regarding fossilized clams ages and environmental conditions. Specifically, whether ADK lakes or rivers impact growth of clams. 
+
+- This data looks at clam growth per growth period for fossilized clams in bodies of water across the Adirondacks and Northern New York. 
+
+- The data set contains the following useful variables:
+  Location: The lake or river that the clam lived in
+  Growth Period: Indicates stage of growth. 1 growth period represents 1 year of life.
+  Length: Overall length of shell
+  Growth: Total growth during that growth period
+  Body: Indicates if water body was a lake or river. 
+  
+- The data used for this project was recorded by Dr. Judith Nagel-Myers of the Geology Department. She collected 151 valves from 17 different localities. 
+  
+**Introduction to Growth Model:**
+
+- For this study, the Von Bertanfly Growth model was used. The Von Bertanfly Growth model is a mathematical model that is widely accepted and used to interpret and understand organisms development over time.
+
+- Given the growth type of clams, this model will best illustrate the data since it is designed to model organism development, especially growth that decreases with time, such as seen in clams. 
+
+- The model looks like this: 
+
+L(t) = L x (1 - exp(-k(t-t0)))
+
+where 
+- L(t) is mean length at time t
+- L is the asymptotic length
+- k is the rate
+- t is time
+- t0 is time where length is 0
+
+- The goal of using the growth model is to understand growth patterns in the fossilized clams in order to draw conclusions about how clams grow in different aquatic environments. 
+
+**Introduction to Bayesian Statistics:**
+
+- Many of the clams may be broken, so determining the earliest date of growth may cause issue. To work around this, I will use Bayesian statistics since it is more flexible than other traditional statistical methods
+
+- Bayesian statistics works by using our prior data with our new information to construct our posterior knowledge. As we get more and more information, we can continue to add to what we know and adjust the model. 
+
+- This method of thinking better suits the data where clams may not all be starting at the same growth period. Instead, as we get new information with each growth period, we will be able adjust the model slightly till it is completely refined.
+
+- Maybe insert that image from the textbook explaining. 
+
+**Data Exploration:**
+
+- Here we explore the data for initial relationships and summary of the data. 
+
+- Include (ideas): 
+River vs. Lake length distribution
+General length distribution of all clams
+Length per period for all clams or divided by lake/river
+Basic regression of all clam growth by period
+
