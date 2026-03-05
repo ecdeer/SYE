@@ -2,18 +2,16 @@
 title: "Bayes Regression - Example"
 format: html
 ---
-# some notes for my model throughout - try to start to fit for our data
 
-# getting lost around likelihood - getting confused by example, insitinct is to just replace values but know that is not right
+Algorithm for Union Falls Pond:
 
-# question: what data should I be using, the prediction data set from before?
-# question: 
+Questions:
+- Line 53: how do you know what values are best?
 
 ```{r}
 # step 0 - load in data and packages
 
 library(tidyverse)
-
 
 # step 1 - write out the vb function, grab from vb quarto
 
@@ -26,44 +24,44 @@ vb_function <- function(t, max_l, k, b) {
 
 # prior for max_l in my model should be 0 (log1) so its not a factor
 
-compute_prior_log <- function(max_l) {
+compute_prior_log <- function(max_l, k, b) {
   dnorm(max_l, mean = 0, sd = 1000, log = TRUE)
+  dnorm(k, mean = 0, sd = 1000, log = TRUE)
+  dnorm(b, mean = 0, sd = 1000, log = TRUE)
 }
 
-compute_prior_log(max_l = 0)
+#  fix k and b in my model, get from model - if you run it you find the values
 
+k <-  0.3183 # k # used to be beta0
+b <-  -0.8749 # b # used to be sigma1
+sigma2 <- summary(unionfallspond_vb)$sigma^2 # treat the summary as the data set to pull out the sd for the function
 
-#### LIKELIHOOD/DATA: assume Y_1, ... Y_n ~ iid N(\beta_0 + beta_1 X_i, \sigma^2),
-#### where \beta_0 and \sigma^2 are assumed to be known. 
+compute_likelihood_log <- function(max_l, k, b) {
 
-# got from fitting with LM, fix k and b in my model 
-
-beta0 <- 20.885
-sigma2 <- 1.922^2
-
-compute_likelihood_log <- function(beta1) {
-
-  dnorm(penguins_comp$bill_depth_mm, mean = beta0 + beta1 * penguins_comp$bill_length_mm,
+  dnorm(predict_unionfallspond$Length, mean = von_bert_function(clams_unionfallspond$growth_period, max_l, k, b),
         sd = sqrt(sigma2), log = TRUE) |>
-    sum() ## sum log likelihoods instead of multiplying like you would do with non-logged likelihoods
+    sum() # call function
+  
+  ## sum log likelihoods instead of multiplying like you would do with non-logged likelihoods
   ## can think back to the math-stat part of probability- the mean just differs depending on
-  ## the bill length instead of just being constant.
+  
 }
-compute_likelihood_log(beta1 = 0)
-compute_likelihood_log(beta1 = -1)
-compute_likelihood_log(beta1 = 1)
+
+compute_likelihood_log(max_l = 30, k = 0.1, b = 0)
+compute_likelihood_log(max_l = 40, k = 0.1, b = 0)
+compute_likelihood_log(max_l = 50, k = 0.1, b = 0)
 ## higher likelihoods are "better"
 
 
 ## combining prior and data/likelihood
 ## again, summing not multiplying because we add things on the log scale
-compute_posterior_log <- function(beta1) {
-  compute_prior_log(beta1) + compute_likelihood_log(beta1)
+compute_posterior_log <- function(max_l, k, b) {
+  compute_prior_log(max_l, k, b) + compute_likelihood_log(max_l, k, b)
 }
 
-compute_posterior_log(beta1 = 0)
-compute_posterior_log(beta1 = -1)
-compute_posterior_log(beta1 = 1)
+compute_posterior_log(max_l = 30, k = 0.1, b = 0)
+compute_posterior_log(max_l = 40, k = 0.1, b = 0)
+compute_posterior_log(max_l = 50, k = 0.1, b = 0)
 
 
 ## define a proposal/jumping distribution to be N(0, 0.1)
@@ -71,12 +69,21 @@ compute_posterior_log(beta1 = 1)
 
 ## set-up the chain
 niter <- 10000
-beta1_store <- rep(NA, 10000) ## empty vector
 
-beta1_store[1] <- 1.2 ## define a starting value
+# set up three empty vectors, one for each parameter
+max_l_store <- rep(NA, 10000) 
+k_store <- rep(NA, 10000)
+b_store <- rep(NA, 10000)
+
+# define a starting value
+max_l_store[1] <- 1.2 
+k_store[1] <- k
+b_store[1] <- b
 
 for (i in 2:niter) {
-  beta1_current <- beta1_store[i - 1]
+  max_l_current <- max_l_store[i - 1]
+  k_current <- k_store[i - 1]
+  b_current <- b_store[i - 1]
 
   ## propose a new value with proposal/jumping distribution
   ## here, my proposal/jumping distribution is N(current_beta1, 0.1)
@@ -84,33 +91,45 @@ for (i in 2:niter) {
   proposal_sd <- 0.01
   ## proposal_sd can't be too large or too small, as discussed in the reading.
 
-  beta1_proposal <- rnorm(1, mean = beta1_current, sd = proposal_sd)
+  max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+  k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+  b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
 
-  ## compute acceptance probability
-  alpha <- min(1, exp(compute_posterior_log(beta1_proposal) - compute_posterior_log(beta1_current)))
+  ## compute acceptance probability - do this in machine learning i think
+  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal) - compute_posterior_log(max_l_current)))
+  
+   alpha_k <- min(1, exp(compute_posterior_log(k_proposal) - compute_posterior_log(k_current)))
+   
+    alpha_b <- min(1, exp(compute_posterior_log(b_proposal) - compute_posterior_log(b_current)))
 
   ## maybe update beta1 with acceptance probability alpha
-  beta1_store[i] <- sample(c(beta1_proposal, beta1_current), size = 1,
-                           prob = c(alpha, 1 - alpha))
+  max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                           prob = c(alpha_l, 1 - alpha_l))
+  k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                           prob = c(alpha_k, 1 - alpha_k))
+  b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                           prob = c(alpha_b, 1 - alpha_b))
 }
 
 ## plots
 ## filter removes "start-up"
-plot_df <- tibble(iter = 1:niter, beta1 = beta1_store) |>
+plot_df <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store) |>
   filter(iter > 2000)
 
 ## make sure that this seems "stable" (isn't trailing off in an increasing
 ## or decreasing direction)
-ggplot(data = plot_df, aes(x = iter, y = beta1)) +
+ggplot(data = plot_df, aes(x = iter, y = max_l)) +
   geom_line()
 
 plot_df |>
-  summarise(mean = mean(beta1),
-            sd = sd(beta1))
+  summarise(mean_l = mean(max_l),
+            mean_k = mean(k),
+            mean_b = mean(b),
+            sd = sd(max_l))
 ## check these with estimator for beta1 and its SE from lm: they should be close!
 
 ## shape of posterior
-ggplot(data = plot_df, aes(x = beta1)) +
+ggplot(data = plot_df, aes(x = max_l)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 
 ```

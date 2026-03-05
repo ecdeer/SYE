@@ -434,7 +434,7 @@ ggplot(clams_tuppernorth, aes(x = growth_period, y = growth,
 clams_union <- clams |> filter(location == "UnionFallsPond") |> group_by(name)
 
 # Multiple Graphs
-ggplot(data=clams_union, aes(x = growth_period, y = growth)) + 
+ggplot(data=clams_union, aes(x = growth_period, y = length)) + 
   geom_line() +
   facet_wrap(vars(name))
 

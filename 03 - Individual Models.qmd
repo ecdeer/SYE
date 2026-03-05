@@ -755,8 +755,7 @@ clams_predictions_waterbody
 # plot to compare between lakes and rivers
 
 ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
-  geom_point() +
-  geom_line(aes(y = predicted_length), linewidth = 2) +
+  geom_line(aes(y = predicted_length, group = name), linewidth = 1) +
   theme_bw() +
   labs(x = "Growth Period", y = "Length", title = "Growth Curves by Lakes and Rivers") +
   facet_wrap(~body) + 
