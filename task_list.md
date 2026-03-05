@@ -1,6 +1,14 @@
 ## Task List
 
-### For March 3
+### For March 12
+
+1. Make the histogram and boxplot of max length for each clam.
+
+2. Make them in ggplot.
+
+3. Work through the algorithm (only update l_max, fix k and b and sigma^2 at fixed values). Make a plot of l_max at the end.
+
+### For March 5
 
 1. Add a picture or two of the growth model.
 
