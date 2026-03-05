@@ -25,7 +25,7 @@ format: html
 
 - For this study, the Von Bertanfly Growth model was used. The Von Bertanfly Growth model is a mathematical model that is widely accepted and used to interpret and understand organisms development over time.
 
-- Given the growth type of clams, this model will best illustrate the data since it is designed to model organism development, especially growth that decreases with time, such as seen in clams. 
+- Given the growth type of clams, this model will best illustrate the data since it is designed to model organism development, especially growth that decreases with time, such as seen in clams. It models length as a function of age.
 
 - The model looks like this: 
 
@@ -38,7 +38,23 @@ where
 - t is time
 - t0 is time where length is 0
 
-- The goal of using the growth model is to understand growth patterns in the fossilized clams in order to draw conclusions about how clams grow in different aquatic environments. 
+- The goal of using the growth model is to understand growth patterns in the fossilized clams in order to draw conclusions about how clams grow in different aquatic environments.
+
+*Add growth image maybe from one of the clams and describe meaning*
+```{r}
+norfolksm <- ggplot(predict_norfolksm,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "red", linewidth = 2) +
+  theme_bw() +
+  labs(x = "Age", y = "Growth",
+       title = "Von Bertanfly Growth Model")
+
+norfolksm
+```
+
+- This image illustrates an example of the Von Bertanfly Growth Model. Here, the model accurately represents the growth of organisms the grow faster in youth and decrease with age. For every year, the rate of growth decreases, giving the model a logarithmic look. 
 
 **Introduction to Bayesian Statistics:**
 
@@ -52,11 +68,44 @@ where
 
 **Data Exploration:**
 
-- Here we explore the data for initial relationships and summary of the data. 
+Here we explore the data for initial relationships, understand the data and summary of the data. 
 
-- Include (ideas): 
-River vs. Lake length distribution
-General length distribution of all clams
-Length per period for all clams or divided by lake/river
-Basic regression of all clam growth by period
+```{r}
+ggplot(data = clams_predictions_waterbody, aes(x = growth_period, y = lag_length)) +
+  geom_point() +
+  geom_smooth() +
+  theme_bw()
+```
+Here, we see that as a clam ages, the length increases. However, it increases rapidly in early life, and the grate rate slowly decreases later in life. This shows that the Van Bertanfly Growth Model is the proper model for this data. 
 
+```{r}
+hist(clams_predictions_waterbody$Length)
+```
+For this study, we used a variety of overall sizes of clams. Since length increases with age, as shown above, we can see we use a normal distribution of different aged clams, where the majority are middle ages with a few young and old samples.
+
+```{r}
+boxplot(Length ~ body, data = clams_predictions_waterbody)
+```
+It appears length of the clams are related to the body of water that it originates in, specifically lakes or rivers. It appears rivers have  longer clams than clams from lakes. This likely has something to do with river conditions, including food content, rivers, and acidity.
+
+```{r}
+ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
+  geom_line(aes(y = predicted_length, group = name), linewidth = 1) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length", title = "Growth Curves of All Clams") +
+  geom_smooth()
+```
+Here, we used the Von Bertanfly Growth model on all the clams in the data set. Here we see that the model well illustrates the growth rates of clams. Clams tend to have faster growth rates at the beginning of their life, and slows as they get older. 
+
+
+```{r}
+ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
+  geom_line(aes(y = predicted_length, group = name), linewidth = 1) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length", title = "Growth Curves by Lakes and Rivers") +
+  facet_wrap(~body) + 
+  geom_smooth()
+```
+Here, we have divided the growth curves by bodies of water, specifically lakes and rivers. Rivers have much faster and longer growth rates than lakes.  
+
+Overall, as we move into our analysis, we can see that growth rate is affected by age making this data a good candidate for the Von Bertanfly Growth model, but more interestingly the body of water that the clams orginiates from appears to be an important factor in its growth.
