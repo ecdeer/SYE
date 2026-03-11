@@ -98,9 +98,9 @@ for (i in 2:niter) {
   ## compute acceptance probability - do this in machine learning i think
   alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal) - compute_posterior_log(max_l_current)))
   
-   alpha_k <- min(1, exp(compute_posterior_log(k_proposal) - compute_posterior_log(k_current)))
+  alpha_k <- min(1, exp(compute_posterior_log(k_proposal) - compute_posterior_log(k_current)))
    
-    alpha_b <- min(1, exp(compute_posterior_log(b_proposal) - compute_posterior_log(b_current)))
+  alpha_b <- min(1, exp(compute_posterior_log(b_proposal) - compute_posterior_log(b_current)))
 
   ## maybe update beta1 with acceptance probability alpha
   max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
