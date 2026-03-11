@@ -81,7 +81,7 @@ for (i in 2:niter) {
   ## propose a new value with proposal/jumping distribution
   ## here, my proposal/jumping distribution is N(current_beta1, 0.1)
   ## this distribution must be symmetric around the current beta1 (or else would need adjustment)
-  proposal_sd <- 0.01
+  proposal_sd <- 1
   ## proposal_sd can't be too large or too small, as discussed in the reading.
 
   max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
