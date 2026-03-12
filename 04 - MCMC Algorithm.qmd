@@ -24,21 +24,23 @@ compute_prior_log <- function(max_l, k, b) {
   dnorm(max_l, mean = 0, sd = 1000, log = TRUE)
 }
 
+## add a dnorm for k and b can have same parameter values
+
 # step 3 - set k, b, sigma^2 as constants
 
-k <-  0.3183 
-b <-  -0.8749 
-sigma2 <- 30 
+k <-  0.3183 ## remove
+b <-  -0.8749  ## remove
+sigma2 <- 30 ## keep
 
 # step 4 - compute log likelihood (make function)
 
-compute_likelihood_log <- function(max_l) {
+compute_likelihood_log <- function(max_l) { # add k and b as arguments
   dnorm(predict_unionfallspond$Length, 
         mean =  von_bert_function(clams_unionfallspond$growth_period, max_l, k, b),
         sd = sqrt(sigma2), log = TRUE) |>
     sum() # call function
   
-}
+} 
 
 # step 5 - sample call 
 
@@ -49,9 +51,9 @@ compute_likelihood_log(max_l = 50)
 
 # step 6 - compute posterior log
 
-compute_posterior_log <- function(max_l) {
+compute_posterior_log <- function(max_l) { # add k and b as arguments in all these functions
   compute_prior_log(max_l) + compute_likelihood_log(max_l)
-}
+} 
 
 # step 7 - sample call
 
@@ -69,6 +71,8 @@ niter <- 10000
 # set up three empty vectors, one for each parameter
 max_l_store <- rep(NA, 10000) 
 
+## add stores - k and b values become these starting values
+
 # define a starting value
 max_l_store[1] <- 1.2 
 
@@ -78,21 +82,29 @@ for (i in 2:niter) {
  
  max_l_current <- max_l_store[i - 1]
 
-  ## propose a new value with proposal/jumping distribution
-  ## here, my proposal/jumping distribution is N(current_beta1, 0.1)
-  ## this distribution must be symmetric around the current beta1 (or else would need adjustment)
+ 
   proposal_sd <- 1
   ## proposal_sd can't be too large or too small, as discussed in the reading.
 
   max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
 
-  ## compute acceptance probability - do this in machine learning i think
-  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal) - compute_posterior_log(max_l_current)))
+  
+  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal) - compute_posterior_log(max_l_current))) 
+  
+  ## in functions need to add k and b as parameters but k[i-1] and b[i-1] so that the updated k and b are used
   
 
   ## maybe update beta1 with acceptance probability alpha
   max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
                            prob = c(alpha_l, 1 - alpha_l))
+  
+  ## new proposal sd for k (may want smaller)
+  ## proposing a new k 
+  ## repeat of code above but for k, need to keep track of l[i] and b[i-1]
+  
+  
+  ## once you get to b use l[i] and k[i]
+  ## updating one at a time
 }
 
 ## plots

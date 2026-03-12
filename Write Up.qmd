@@ -79,7 +79,9 @@ ggplot(data = clams_predictions_waterbody, aes(x = growth_period, y = lag_length
 Here, we see that as a clam ages, the length increases. However, it increases rapidly in early life, and the grate rate slowly decreases later in life. This shows that the Van Bertanfly Growth Model is the proper model for this data. 
 
 ```{r}
-max_length <- clams_predictions_waterbody |> group_by(name) |> mutate(max = max(Length))
+max_length <- clams_predictions_waterbody |> 
+  group_by(name) |> 
+  summarise(max = max(Length))
 
 ggplot(data = max_length, aes(x = max)) + 
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
@@ -91,7 +93,12 @@ ggplot(data = max_length, aes(x = max)) +
 For this study, we used a variety of overall sizes of clams. Since length increases with age, as shown above, we can see we use a normal distribution of different aged clams, where the majority are middle ages with a few young and old samples.
 
 ```{r}
-ggplot(data = max_length, aes(y = max, x = body)) + 
+max_length_2 <- clams_predictions_waterbody |> 
+  group_by(name) |> 
+  mutate(max = max(Length)) |> 
+  slice(1)
+
+ggplot(data = max_length_2, aes(y = max, x = body)) + 
   geom_boxplot(colour = "skyblue4", fill = "skyblue1") +
   theme_bw() +
   labs(x = "Type of Water Body", 
