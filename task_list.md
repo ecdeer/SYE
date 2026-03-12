@@ -1,5 +1,9 @@
 ## Task List
 
+### For March 19
+
+1. Update algorithm to incorporate k and b and make resulting plots at the end.
+
 ### For March 12
 
 1. Make the histogram and boxplot of max length for each clam.
