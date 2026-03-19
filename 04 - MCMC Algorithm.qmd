@@ -28,13 +28,13 @@ compute_prior_log <- function(max_l, k, b) {
 
 # step 3 - set k, b, sigma^2 as constants
 
-k <-  0.3183 ## remove
-b <-  -0.8749  ## remove
+#k <-  0.3183 ## remove
+#b <-  -0.8749  ## remove
 sigma2 <- 30 ## keep
 
 # step 4 - compute log likelihood (make function)
 
-compute_likelihood_log <- function(max_l) { # add k and b as arguments
+compute_likelihood_log <- function(max_l, k, b) { # add k and b as arguments
   dnorm(predict_unionfallspond$Length, 
         mean =  von_bert_function(clams_unionfallspond$growth_period, max_l, k, b),
         sd = sqrt(sigma2), log = TRUE) |>
@@ -44,22 +44,22 @@ compute_likelihood_log <- function(max_l) { # add k and b as arguments
 
 # step 5 - sample call 
 
-compute_likelihood_log(max_l = 30)
-compute_likelihood_log(max_l = 40)
-compute_likelihood_log(max_l = 50)
+compute_likelihood_log(max_l = 30, k = 0.3, b = -0.8)
+compute_likelihood_log(max_l = 40, k = 0.35, b = -0.5)
+compute_likelihood_log(max_l = 50, k = 0.4, b = -0.1)
 
 
 # step 6 - compute posterior log
 
-compute_posterior_log <- function(max_l) { # add k and b as arguments in all these functions
-  compute_prior_log(max_l) + compute_likelihood_log(max_l)
+compute_posterior_log <- function(max_l, k, b) { # add k and b as arguments in all these functions
+  compute_prior_log(max_l, k, b) + compute_likelihood_log(max_l, k, b)
 } 
 
 # step 7 - sample call
 
-compute_posterior_log(max_l = 30)
-compute_posterior_log(max_l = 40)
-compute_posterior_log(max_l = 50)
+compute_posterior_log(max_l = 30, k = 0.3, b = -0.8)
+compute_posterior_log(max_l = 40, k = 0.35, b = -0.5)
+compute_posterior_log(max_l = 50, k = 0.4, b = -0.1)
 
 
 ## define a proposal/jumping distribution to be N(0, 0.1)
@@ -69,61 +69,103 @@ compute_posterior_log(max_l = 50)
 niter <- 10000
 
 # set up three empty vectors, one for each parameter
-max_l_store <- rep(NA, 10000) 
+max_l_store <- rep(NA, 10000)
+b_store <- rep(NA, 10000)
+k_store <- rep(NA, 10000)
 
 ## add stores - k and b values become these starting values
 
 # define a starting value
 max_l_store[1] <- 1.2 
+k_store[1] <- 0.3183
+b_store[1] <- -0.8749
 
 
 
 for (i in 2:niter) {
  
+  ## start with max_l
  max_l_current <- max_l_store[i - 1]
 
- 
   proposal_sd <- 1
-  ## proposal_sd can't be too large or too small, as discussed in the reading.
-
+ 
   max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
 
-  
-  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal) - compute_posterior_log(max_l_current))) 
+  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1]))) 
   
   ## in functions need to add k and b as parameters but k[i-1] and b[i-1] so that the updated k and b are used
   
-
-  ## maybe update beta1 with acceptance probability alpha
   max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
                            prob = c(alpha_l, 1 - alpha_l))
   
-  ## new proposal sd for k (may want smaller)
+  
+  ## start K
+   ## new proposal sd for k (may want smaller)
   ## proposing a new k 
   ## repeat of code above but for k, need to keep track of l[i] and b[i-1]
   
+  k_current <- k_store[i - 1]
+  proposal_sd <- 0.1
+  k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
   
+  alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1]) - compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1]))) 
+  
+  k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                           prob = c(alpha_k, 1 - alpha_k))
+ 
+  
+  # start B
   ## once you get to b use l[i] and k[i]
-  ## updating one at a time
+  b_current <- b_store[i - 1]
+  
+  proposal_sd <- 0.1
+  
+  b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+  
+  alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_proposal))) 
+  
+  b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                           prob = c(alpha_b, 1 - alpha_b))
+ 
+  
+## updating one at a time
 }
 
-## plots
-## filter removes "start-up"
+
 plot_df <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store) |>
   filter(iter > 2000)
 
-## make sure that this seems "stable" (isn't trailing off in an increasing
-## or decreasing direction)
+# max_l plots
 ggplot(data = plot_df, aes(x = iter, y = max_l)) +
   geom_line()
 
 plot_df |>
   summarise(mean_l = mean(max_l),
             sd = sd(max_l))
-## check these with estimator for beta1 and its SE from lm: they should be close!
 
-## shape of posterior
 ggplot(data = plot_df, aes(x = max_l)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+
+# k plots
+ggplot(data = plot_df, aes(x = iter, y = k)) +
+  geom_line()
+
+plot_df |>
+  summarise(mean_l = mean(k),
+            sd = sd(k))
+
+ggplot(data = plot_df, aes(x = k)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+
+# b plots
+ggplot(data = plot_df, aes(x = iter, y = b)) +
+  geom_line()
+
+plot_df |>
+  summarise(mean_l = mean(b),
+            sd = sd(b))
+
+ggplot(data = plot_df, aes(x = b)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 
 ```
