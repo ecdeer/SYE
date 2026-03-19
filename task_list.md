@@ -1,5 +1,15 @@
 ## Task List
 
+### For April 2
+
+1. Put data reading, function, MCMC algorithm into a single R script.
+
+2. Fix the compute_prior_log() function to include the other parameters and fix the functions to only use the data (not the predicted data) and to have the length = 1 as part of each clam.
+
+3. Add sigma squared into the algorithm (may not work if you ever propose a negative value).
+
+4. Start the write-up about the algorithm itself and what is happening.
+
 ### For March 19
 
 1. Update algorithm to incorporate k and b and make resulting plots at the end.
