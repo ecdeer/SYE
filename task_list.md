@@ -1,5 +1,15 @@
 ## Task List
 
+### For April 9
+
+1. Write abstract and title (bring to meeting on Thursday).
+
+2. Do the first two columns of the poster (see notes).
+
+3. Fix the model issue with sigma squared and look at results.
+
+4. Finish algorithm write up about loop.
+
 ### For April 2
 
 1. Put data reading, function, MCMC algorithm into a single R script.
