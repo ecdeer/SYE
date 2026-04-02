@@ -127,4 +127,25 @@ ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) 
 ```
 Here, we have divided the growth curves by bodies of water, specifically lakes and rivers. Rivers have much faster and longer growth rates than lakes.  
 
-Overall, as we move into our analysis, we can see that growth rate is affected by age making this data a good candidate for the Von Bertanfly Growth model, but more interestingly the body of water that the clams orginiates from appears to be an important factor in its growth.
+Overall, as we move into our analysis, we can see that growth rate is affected by age making this data a good candidate for the Von Bertanfly Growth model, but more interestingly the body of water that the clams originates from appears to be an important factor in its growth.
+
+**Algorithm**
+
+The purpose of this algorithm is to estimate the parameters of a growth curve for clams in the Northern New York using Bayesian inference. This algorithm is based on the Markov Chain Monte Carlo (MCMC) method. The MCMC algorithm method is used to analyzing complex probability distributions, like the ones in this study. Additionally, we are searching for estimates, not just a best fit. So, a MCMC type of algorithm would be best.  
+
+In this algorithm, we want to estimate four parameters of the Von Bertanfly Growth model: max_l, k, b, and sigma-squared. The parameter max_l represents the maximum possible length for clams, k represents the growth rate, b represents time where length is 0, and sigma-squared represents the variance.  
+
+First, the Von Bertanfly Growth function is defined using the parameters specified above. Again, this model is best used in these scenarios because it models typical biologic growth, where growth rate slows as the organism approaches max length. 
+
+Second, the algorithm creates functions of the log prior and log likelihood in order to create a function that calculates the posterior log. The posterior log is proportionate to the sum of the log prior and log likelihood. The log posterior is important because it describes the probability density function once we learn more about the parameter estimates. 
+
+So, first it creates the function for log prior. The log prior is the logarithm of the prior probability density function. In other words, what we believe about the distribution before we estimate any parameters. It has the same parameters as described above, max_l, k, b, and sigma-squared.
+
+Then, the algorithm computes the log likelihood. The log likelihood component is important because it essential for Bayesian inference. It provides us with the learned knowledge to better refine our model and log posterior since it tells us how probable the observed data are. 
+
+After the log-prior and log-likelihood is definied, a function is created to find the log-posterior, which is the sum of the log-prior and log-likelihood. 
+
+
+
+
+
