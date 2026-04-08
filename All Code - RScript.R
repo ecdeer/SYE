@@ -15,7 +15,7 @@ clams_unionfallspond <- clams |>
   filter(location == "UnionFallsPond") |>
   group_by(name)
 
-unionfallspond_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+unionfallspond_vb <- nls(Length ~ vb_function(growth_period, max_l, k, b),
                          data = clams_unionfallspond,
                          start = list(max_l = max(clams_unionfallspond$Length), k = 0.1, b = 0))
 
@@ -147,7 +147,7 @@ for (i in 2:niter) {
   
   proposal_sd <- 0.2
   
-  sigma2_proposal <- rlnorm(1, meanlog = log(sigma2_current), sdlog = proposal_sd)
+  sigma2_proposal <- rlnorm(1, meanlog = log(sigma2_current), sdlog = proposal_sd) |> exp()
   # stack overflow suggests logging it using rlnorm to get avoid zeros
   
   alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current))) 
@@ -205,3 +205,4 @@ plot_df |>
 
 ggplot(data = plot_df, aes(x = sigma2)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+

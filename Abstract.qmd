@@ -1,0 +1,9 @@
+---
+title: "Abstract"
+author: "Emma Deering"
+format: html
+---
+
+Title: Modeling Growth Rates of Fossilized Bivalves Using Bayesian Statistics. 
+
+Abstract: This study analyzes the growth rates of fossilized clams collected from lakes and rivers across Northern New York to draw conclusions about environmental conditions and how they may impact a bivalve's growth. Using shell growth rings,the data records how much each clam grew during each annual growth period. Since clams growth decrease with age, a Von Bertanfly growth model is applied to describe the relationship between shell length and age. To estimate each of the model's parameters, a Markov Chain Monte Carlo (MCMC) Algorithm was built using a Bayesian framework, which helps address any uncertainty and incomplete data. The results of the model indicate that river environments may cause faster growth in clams than lake environments. 

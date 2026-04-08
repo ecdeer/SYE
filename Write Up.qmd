@@ -3,6 +3,20 @@ title: "Write Up"
 author: "Emma Deering"
 format: html
 ---
+abstract 
+-introduce data
+-introduce question
+-what i am doing
+-short conclusions/findings
+-title (Verb + subject | Analyzing growth of rates of fossilized clams in Northern new York)
+
+poster 
+-growth curve overview
+-parameters
+-predicted simple model
+-bayesian piece (algorithm)
+-bullets for texts
+-use posterdown
 
 **Introduction to Data:**
 
