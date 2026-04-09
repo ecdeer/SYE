@@ -1,0 +1,126 @@
+---
+title: "Modeling Growth Rates of Fossilized Bivalves Using Bayesian Statistics"
+author:
+  - name: Emma Deering
+affiliation:
+  - address: Department of Math, Computer Science, and Statistics
+  - address: St. Lawrence University
+  - address: Advised by Dr. Matt Higham
+column_numbers: 3
+output: 
+  posterdown::posterdown_html:
+   self_contained: true
+poster_height: "36in"
+poster_width: "48in"
+titlebox_borderwidth: "0cm"
+sectitle_textsize: "62pt"
+primary_colour: "#7f9078"
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	singlespacing = TRUE
+)
+library(tidyverse)
+library(pander)
+library(dplyr)
+library(ggplot2)
+library(readr)
+```
+
+# Abstract
+
+Exploring how growth rates of fossilized clams change across environmental conditions across Northern New York, specifically in regards to acidic vs non acidic bodies of water
+
+**Key objectives:**
+
+-  Use a Von Bertanfly growth model to model clam growth rates.
+    
+-  Estimate model parameters using a MCMC algorithm. 
+    
+-  Incorporate a Bayesian framework to account for uncertainty and missing data. 
+
+# Data
+- Using shell growth rings, the data records how much each clam grew during each annual growth period.
+
+- The data set contains the following useful variables:
+  - Location: The lake or river that the clam lived in.
+  
+  - Growth Period: Indicates annual stage of growth. 
+  
+  - Length: Overall length of shell
+  
+  - Growth: Total growth during that growth period
+  
+  - Body: Indicates if water body was a lake or river. 
+  
+- The data used for this project was recorded by Dr. Judith Nagel-Myers of the St. Lawrence University Geology Department. She collected 151 valves from 17 different localities. 
+
+# Growth Model and Parameters 
+
+Von Bertanfly growth model models clam growth as length versus age, capturing decreasing growth rates over time typical of organism development.
+
+$$
+L(t) = L \cdot (1 - e^{-k \cdot (t-t_0)})
+$$
+where 
+
+- $t$ is time
+
+- $L(t)$ is mean length at time t
+
+- $L$ is the asymptotic length
+
+- $k$ is the rate
+
+- $t_0$ is time where length is 0
+
+```{r}
+# sample von bertanfly growth model - simple
+
+clams <- read_csv("data/clams_clean.csv")
+
+# remove negative values from Coopers Falls, Lake Clear, Mirror Lake
+clams <- clams |> filter(growth > 0)
+
+clams_norfolk <- clams |>
+  filter(location == "Norfolk") |>
+  group_by(name)
+
+vb_function <- function(t, max_l, k, b) {
+  max_l * (1 - exp(-k * (t - b)))}
+
+norfolk_vb <- nls(Length ~ vb_function(growth_period, max_l, k, b),
+  data = clams_norfolk,
+  start = list(max_l = max(clams_norfolk$Length), k = 0.1, b = 0))
+
+predict_norfolk <- clams_norfolk |>
+  ungroup() |>
+  mutate(predicted_length = predict(norfolk_vb)) 
+
+norfolk <- ggplot(predict_norfolk,
+  aes(x = growth_period, y = Length)) +
+  geom_point() +
+  geom_line(aes(y = predicted_length),
+            color = "darkgreen", linewidth = 2) +
+  labs(x = "Growth Period", y = "Length",
+       title = "Growth Curve of Norfolk Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+norfolk
+```
+
+# Bayesian Algorithm 
+
+- Fossilized clams may be damaged or incomplete due to erosion, dissolution, or abrasion, therefore they may have missing growth periods. Therefore, not every clam's first growth period represents their first year of growth and not every clam's last growth period represents their last year of life. 
+
+- The purpose of this algorithm is to estimate the parameters of a growth curve for clams in the Northern New York using Bayesian inference, where it takes prior information and current information to make a decision. These unique, estimated parameters will allow proper estimates of the growth rates of clams between acidic and non acidic environments. 
+
+
