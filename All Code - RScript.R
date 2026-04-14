@@ -16,37 +16,28 @@ clams <- clams |>
   filter(growth > 0) |>
   mutate(x = case_when(
     body == "L" ~ 1,
-    body == "R" ~ 0))
+    body == "R" ~ 0)) 
+# |> group_by(name) - this is for all the data
 
 # vb function
 
 vb_function <- function(t, max_l, k, b, beta, x) {
   max_l * (1 - exp(-(k + beta * x) * (t - b)))}
 
-# data and predictions for union falls pond
-clams_unionfallspond <- clams |>
-  filter(location == "UnionFallsPond") |>
+# data for union falls pond
+# clams_unionfallspond <- clams |>
+#  filter(location == "UnionFallsPond") |>
+#  group_by(name)
+
+# data for rivers
+rivers <- clams |> 
+  filter(body == "R") |>
   group_by(name)
 
-unionfallspond_vb <- nls(Length ~ vb_function(growth_period, max_l, k, b, beta, x),
-                         data = clams_unionfallspond,
-                         start = list(max_l = max(clams_unionfallspond$Length), k = 0.1, 
-                                      b = 0, x = clams_unionfallspond$x))
-
-predict_unionfallspond <- clams_unionfallspond |>
-  ungroup() |>
-  mutate(predicted_length = predict(unionfallspond_vb))
-
-unionfallspond <- ggplot(predict_unionfallspond,
-                         aes(x = growth_period, y = Length)) +
-  geom_point() +
-  geom_line(aes(y = predicted_length),
-            color = "mediumvioletred", linewidth = 2) +
-  theme_bw() +
-  labs(x = "Growth Period", y = "Length",
-       title = "Growth Curve of Union Falls Pond Clams")
-
-unionfallspond
+# data for lakes
+# lakes <- clams |> 
+#  filter(body == "L") |>
+#  group_by(name)
 
 # MCMC Algorithm
 
@@ -63,8 +54,8 @@ compute_prior_log <- function(max_l, k, b, sigma2, beta) {
 # step 4 - compute log likelihood (make function)
 
 compute_likelihood_log <- function(max_l, k, b, sigma2, beta) {
-  dnorm(clams_unionfallspond$Length,
-        mean =  vb_function(clams_unionfallspond$growth_period, max_l, k, b, beta, clams_unionfallspond$x),
+  dnorm(rivers$Length,
+        mean =  vb_function(rivers$growth_period, max_l, k, b, beta, rivers$x),
         sd = sqrt(sigma2), log = TRUE) |>
     sum()
 }
@@ -101,94 +92,92 @@ b_store <- rep(NA, 10000)
 k_store <- rep(NA, 10000)
 sigma2_store <- rep(NA, 10000)
 beta_store <- rep(NA, 10000)
-
-
+  
+  
 # define a starting value
 max_l_store[1] <- 1.2
 k_store[1] <- 0.3183
 b_store[1] <- -0.8749
 sigma2_store[1] <- 30
 beta_store[1] <- 0
-
-
+  
+  
 for (i in 2:niter) {
-  
-  ## start with max_l
-  max_l_current <- max_l_store[i - 1]
-  
-  proposal_sd <- 3
-  
-  max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
-  
-  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1])))
-  
-  max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
-                           prob = c(alpha_l, 1 - alpha_l))
-  
-  
-  ## start K
-  
-  k_current <- k_store[i - 1]
-  
-  proposal_sd <- 0.05
-  
-  k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
-  
-  
-  alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1])))
-  
-  k_store[i] <- sample(c(k_proposal, k_current), size = 1,
-                       prob = c(alpha_k, 1 - alpha_k))
-  
-  
-  # start B
-  
-  b_current <- b_store[i - 1]
-  
-  proposal_sd <- 0.1
-  
-  b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
-  
-  alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1])))
-  
-  b_store[i] <- sample(c(b_proposal, b_current), size = 1,
-                       prob = c(alpha_b, 1 - alpha_b))
-  
-  # start sigma2
-  
-  sigma2_current <- sigma2_store[i-1]
-  sigma2_current_log <- sigma2_current |> log()
-  
-  proposal_sd <- 0.2
-  
-  sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
-  sigma2_proposal <- exp(sigma2_proposal_log)
-  
-  alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current) - log(sigma2_current)))
-  
-  sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
-                            prob = c(alpha_sigma2, 1 - alpha_sigma2))
-  
-  # start beta
-  beta_current <- beta_store[i - 1]
-  
-  proposal_sd <- 0.1
-  
-  beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
-  
-  alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal[i]) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
-  
-  beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
-                       prob = c(alpha_beta, 1 - alpha_beta))
-  
-  
-  
-  ## updating one at a time
+    
+    ## start with max_l
+    max_l_current <- max_l_store[i - 1]
+    
+    proposal_sd <- 3
+    
+    max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+    
+    alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                             prob = c(alpha_l, 1 - alpha_l))
+    
+    
+   ## start K
+    
+    k_current <- k_store[i - 1]
+    
+    proposal_sd <- 0.05
+    
+    k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+    
+    
+    alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                         prob = c(alpha_k, 1 - alpha_k))
+    
+    
+    # start B
+    
+    b_current <- b_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+    
+    alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1], beta_store[i-1])))
+    
+    b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                         prob = c(alpha_b, 1 - alpha_b))
+    
+    # start sigma2
+    
+    sigma2_current <- sigma2_store[i-1]
+    sigma2_current_log <- sigma2_current |> log()
+    
+    proposal_sd <- 0.2
+    
+    sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
+    sigma2_proposal <- exp(sigma2_proposal_log)
+    
+    alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal, beta_store[i-1]) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current, beta_store[i-1]) - log(sigma2_current)))
+    
+    sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
+                              prob = c(alpha_sigma2, 1 - alpha_sigma2))
+    
+    # start beta
+    beta_current <- beta_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
+    
+    alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
+    
+    beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
+                            prob = c(alpha_beta, 1 - alpha_beta))
+    
+    ## updating one at a time
 }
-
+  
+  
 plot_df <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store,
-                  sigma2_store) |>
-  filter(iter > 2000)
+                  sigma2_store, beta_store) |> filter(iter > 2000)
 
 # max_l plots
 ggplot(data = plot_df, aes(x = iter, y = max_l)) +
@@ -206,7 +195,7 @@ ggplot(data = plot_df, aes(x = iter, y = k)) +
   geom_line()
 
 plot_df |>
-  summarise(mean_l = mean(k),
+  summarise(mean_k = mean(k),
             sd = sd(k))
 
 ggplot(data = plot_df, aes(x = k)) +
@@ -217,7 +206,7 @@ ggplot(data = plot_df, aes(x = iter, y = b)) +
   geom_line()
 
 plot_df |>
-  summarise(mean_l = mean(b),
+  summarise(mean_b = mean(b),
             sd = sd(b))
 
 ggplot(data = plot_df, aes(x = b)) +
@@ -240,7 +229,14 @@ ggplot(data = plot_df, aes(x = iter, y = beta_store)) +
 
 plot_df |>
   summarise(mean_sigma2 = mean(beta_store),
-            sd = sd(sigma2_store))
+            sd = sd(beta_store))
 
 ggplot(data = plot_df, aes(x = beta_store)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+
+
+
+
+
+
+

@@ -14,8 +14,9 @@ poster_height: "36in"
 poster_width: "48in"
 titlebox_borderwidth: "0cm"
 sectitle_textsize: "62pt"
-primary_colour: "#7f9078"
+primary_colour: "#49585C"
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
 	echo = FALSE,
@@ -28,54 +29,69 @@ library(pander)
 library(dplyr)
 library(ggplot2)
 library(readr)
+library(pander)
+library(nlme)
+library(mgcv)
+library(hms)
+library(broom)
+library(modelr)
+library(readxl)
 ```
 
 # Abstract
 
-Exploring how growth rates of fossilized clams change across environmental conditions across Northern New York, specifically in regards to acidic vs non acidic bodies of water
+Exploring how growth rates of fossilized clams change across environmental conditions across Northern New York, specifically in regards to acidic vs non acidic bodies of water.
 
-**Key objectives:**
+**Key Objectives:**
 
--  Use a Von Bertanfly growth model to model clam growth rates.
-    
--  Estimate model parameters using a MCMC algorithm. 
-    
--  Incorporate a Bayesian framework to account for uncertainty and missing data. 
+-   Use a Von Bertanfly growth model to model clam growth rates.
+
+-   Estimate model parameters using a MCMC algorithm.
+
+-   Incorporate a Bayesian framework to account for uncertainty and missing data.
 
 # Data
-- Using shell growth rings, the data records how much each clam grew during each annual growth period.
 
-- The data set contains the following useful variables:
-  - Location: The lake or river that the clam lived in.
-  
-  - Growth Period: Indicates annual stage of growth. 
-  
-  - Length: Overall length of shell
-  
-  - Growth: Total growth during that growth period
-  
-  - Body: Indicates if water body was a lake or river. 
-  
-- The data used for this project was recorded by Dr. Judith Nagel-Myers of the St. Lawrence University Geology Department. She collected 151 valves from 17 different localities. 
+-   Using shell growth rings, the data records how much each clam grew during each annual growth period.
 
-# Growth Model and Parameters 
+-   The data set contains the following useful variables:
+
+    -   Location: The lake or river that the clam lived in.
+
+    -   Growth Period: Indicates annual stage of growth.
+
+    -   Length: Overall length of shell
+
+    -   Growth: Total growth during that growth period
+
+    -   Body: Indicates if water body was a lake or river.
+
+-   Data collected Dr. Judith Nagel-Myers of the St. Lawrence University (Geology).
+
+-   151 valves from 17 different localities.
+
+# Growth Model and Parameters
 
 Von Bertanfly growth model models clam growth as length versus age, capturing decreasing growth rates over time typical of organism development.
 
 $$
-L(t) = L \cdot (1 - e^{-k \cdot (t-t_0)})
-$$
-where 
+L(t) = L \cdot (1 - e^{-(k + \beta \cdot x) \cdot (t-t_0)})
+$$ where
 
-- $t$ is time
+-   $t$ is time
 
-- $L(t)$ is mean length at time t
+-   $L(t)$ is mean length at time t
 
-- $L$ is the asymptotic length
+-   $L$ is the asymptotic length
 
-- $k$ is the rate
+-   $k$ is the rate
 
-- $t_0$ is time where length is 0
+-   $\beta$ adjusts the growth rate based on acidity
+
+-   $x$ is binary that indicates acidity
+
+-   $t_0$ is time where length is 0
+
 
 ```{r}
 # sample von bertanfly growth model - simple
@@ -85,26 +101,26 @@ clams <- read_csv("data/clams_clean.csv")
 # remove negative values from Coopers Falls, Lake Clear, Mirror Lake
 clams <- clams |> filter(growth > 0)
 
-clams_norfolk <- clams |>
-  filter(location == "Norfolk") |>
+clams_norfolksm <- clams |>
+  filter(location == "NorfolkSM") |>
   group_by(name)
 
-vb_function <- function(t, max_l, k, b) {
+von_bert_function <- function(t, max_l, k, b) {
   max_l * (1 - exp(-k * (t - b)))}
 
-norfolk_vb <- nls(Length ~ vb_function(growth_period, max_l, k, b),
-  data = clams_norfolk,
-  start = list(max_l = max(clams_norfolk$Length), k = 0.1, b = 0))
+norfolksm_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norfolksm,
+  start = list(max_l = max(clams_norfolksm$Length), k = 0.1, b = 0))
 
-predict_norfolk <- clams_norfolk |>
+predict_norfolksm <- clams_norfolksm |>
   ungroup() |>
-  mutate(predicted_length = predict(norfolk_vb)) 
+  mutate(predicted_length = predict(norfolksm_vb)) 
 
-norfolk <- ggplot(predict_norfolk,
+norfolksm <- ggplot(predict_norfolksm,
   aes(x = growth_period, y = Length)) +
   geom_point() +
   geom_line(aes(y = predicted_length),
-            color = "darkgreen", linewidth = 2) +
+            color = "darkblue", linewidth = 2) +
   labs(x = "Growth Period", y = "Length",
        title = "Growth Curve of Norfolk Clams") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
@@ -114,13 +130,832 @@ norfolk <- ggplot(predict_norfolk,
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
 
-norfolk
+norfolksm
 ```
 
-# Bayesian Algorithm 
 
-- Fossilized clams may be damaged or incomplete due to erosion, dissolution, or abrasion, therefore they may have missing growth periods. Therefore, not every clam's first growth period represents their first year of growth and not every clam's last growth period represents their last year of life. 
+```{r}
+# plot to compare between lakes and rivers
 
-- The purpose of this algorithm is to estimate the parameters of a growth curve for clams in the Northern New York using Bayesian inference, where it takes prior information and current information to make a decision. These unique, estimated parameters will allow proper estimates of the growth rates of clams between acidic and non acidic environments. 
+# data predictions
+clams_blacklake <- clams |>
+  filter(location == "BlackLake") |>
+  group_by(name)
+
+blacklake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_blacklake,
+  start = list(max_l = max(clams_blacklake$Length), k = 0.1, b = 0))
+
+predict_blacklake <- clams_blacklake |>
+  ungroup() |>
+  mutate(predicted_length = predict(blacklake_vb)) 
+
+clams_briggs <- clams |>
+  filter(location == "Briggs") |>
+  group_by(name)
+
+briggs_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_briggs,
+  start = list(max_l = max(clams_briggs$Length), k = 0.1, b = 0))
+
+predict_briggs <- clams_briggs |>
+  ungroup() |>
+  mutate(predicted_length = predict(briggs_vb)) 
+
+clams_colton <- clams |>
+  filter(location == "ColtonCanoeLaunch") |>
+  group_by(name)
+
+colton_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_colton,
+  start = list(max_l = max(clams_colton$Length), k = 0.1, b = 0))
+
+predict_colton <- clams_colton |>
+  ungroup() |>
+  mutate(predicted_length = predict(colton_vb))
+
+clams_copper <- clams |>
+  filter(location == "CoppersFalls") |>
+  group_by(name)
+
+copper_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_copper,
+  start = list(max_l = max(clams_copper$Length), k = 0.1, b = 0))
+
+predict_copper <- clams_copper |>
+  ungroup() |>
+  mutate(predicted_length = predict(copper_vb))
+
+clams_dekalb <- clams |>
+  filter(location == "DeKalb") |>
+  group_by(name)
+
+dekalb_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_dekalb,
+  start = list(max_l = max(clams_dekalb$Length), k = 0.1, b = 0))
+
+predict_dekalb <- clams_dekalb |>
+  ungroup() |>
+  mutate(predicted_length = predict(dekalb_vb))
+
+clams_eelweir <- clams |>
+  filter(location == "EelWeir") |>
+  group_by(name)
+
+eelweir_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_eelweir,
+  start = list(max_l = max(clams_eelweir$Length), k = 0.1, b = 0))
+
+predict_eelweir <- clams_eelweir |>
+  ungroup() |>
+  mutate(predicted_length = predict(eelweir_vb)) 
+
+clams_govpark <- clams |>
+  filter(location == "GovPark") |>
+  group_by(name)
+
+govpark_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_govpark,
+  start = list(max_l = max(clams_govpark$Length), k = 0.1, b = 0))
+
+predict_govpark <- clams_govpark |>
+  ungroup() |>
+  mutate(predicted_length = predict(govpark_vb)) 
+
+clams_heuvelton <- clams |>
+  filter(location == "HeuveltonBoatLaunch") |>
+  group_by(name)
+
+heuvelton_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_heuvelton,
+  start = list(max_l = max(clams_heuvelton$Length), k = 0.1, b = 0))
+
+predict_heuvelton <- clams_heuvelton |>
+  ungroup() |>
+  mutate(predicted_length = predict(heuvelton_vb))
+
+clams_horseshoe <- clams |>
+  filter(location == "HorseShoeLake") |>
+  group_by(name)
+
+horseshoe_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_horseshoe,
+  start = list(max_l = max(clams_horseshoe$Length), k = 0.1, b = 0))
+
+predict_horseshoe <- clams_horseshoe |>
+  ungroup() |>
+  mutate(predicted_length = predict(horseshoe_vb)) 
+
+clams_lakeclear <- clams |>
+  filter(location == "LakeClear") |>
+  group_by(name)
+
+lakeclear_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lakeclear,
+  start = list(max_l = max(clams_lakeclear$Length), k = 0.1, b = 0))
+
+predict_lakeclear <- clams_lakeclear |>
+  ungroup() |>
+  mutate(predicted_length = predict(lakeclear_vb)) 
+
+clams_lakeflower <- clams |>
+  filter(location == "LakeFlower") |>
+  group_by(name)
+
+lakeflower_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lakeflower,
+  start = list(max_l = max(clams_lakeflower$Length), k = 0.1, b = 0))
+
+predict_lakeflower <- clams_lakeflower |>
+  ungroup() |>
+  mutate(predicted_length = predict(lakeflower_vb)) 
+
+clams_lehman <- clams |>
+  filter(location == "LehmanPark") |>
+  group_by(name)
+
+lehman_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_lehman,
+  start = list(max_l = max(clams_lehman$Length), k = 0.1, b = 0))
+
+predict_lehman <- clams_lehman |>
+  ungroup() |>
+  mutate(predicted_length = predict(lehman_vb)) 
+
+clams_longlake <- clams |>
+  filter(location == "LongLake") |>
+  group_by(name)
+
+longlake_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_longlake,
+  start = list(max_l = max(clams_longlake$Length), k = 0.1, b = 0))
+
+predict_longlake <- clams_longlake |>
+  ungroup() |>
+  mutate(predicted_length = predict(longlake_vb))
+
+clams_massena <- clams |>
+  filter(location == "Massena") |>
+  group_by(name)
+
+massena_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_massena,
+  start = list(max_l = max(clams_massena$Length), k = 0.1, b = 0))
+
+predict_massena <- clams_massena |>
+  ungroup() |>
+  mutate(predicted_length = predict(massena_vb)) 
+
+clams_mirror <- clams |>
+  filter(location == "MirrorLake") |>
+  group_by(name)
+
+mirror_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_mirror,
+  start = list(max_l = max(clams_mirror$Length), k = 0.1, b = 0))
+
+predict_mirror <- clams_mirror |>
+  ungroup() |>
+  mutate(predicted_length = predict(mirror_vb)) 
+
+clams_mountain <- clams |>
+  filter(location == "MountainLake") |>
+  group_by(name)
+
+mountain_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_mountain,
+  start = list(max_l = max(clams_mountain$Length), k = 0.1, b = 0))
+
+predict_mountain <- clams_mountain |>
+  ungroup() |>
+  mutate(predicted_length = predict(mountain_vb)) 
+
+clams_norfolk <- clams |>
+  filter(location == "Norfolk") |>
+  group_by(name)
+
+norfolk_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norfolk,
+  start = list(max_l = max(clams_norfolk$Length), k = 0.1, b = 0))
+
+predict_norfolk <- clams_norfolk |>
+  ungroup() |>
+  mutate(predicted_length = predict(norfolk_vb)) 
+
+clams_norfolksm <- clams |>
+  filter(location == "NorfolkSM") |>
+  group_by(name)
+
+norfolksm_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norfolksm,
+  start = list(max_l = max(clams_norfolksm$Length), k = 0.1, b = 0))
+
+predict_norfolksm <- clams_norfolksm |>
+  ungroup() |>
+  mutate(predicted_length = predict(norfolksm_vb)) 
+
+clams_norwood <- clams |>
+  filter(location == "NorwoodBeach") |>
+  group_by(name)
+
+norwood_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_norwood,
+  start = list(max_l = max(clams_norwood$Length), k = 0.1, b = 0))
+
+predict_norwood <- clams_norwood |>
+  ungroup() |>
+  mutate(predicted_length = predict(norwood_vb))
+
+clams_piercefield <- clams |>
+  filter(location == "Piercefield") |>
+  group_by(name)
+
+piercefield_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_piercefield,
+  start = list(max_l = max(clams_piercefield$Length), k = 0.1, b = 0))
+
+predict_piercefield <- clams_piercefield |>
+  ungroup() |>
+  mutate(predicted_length = predict(piercefield_vb)) 
+
+clams_pinestreet <- clams |>
+  filter(location == "PineStreet") |>
+  group_by(name)
+
+pinestreet_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_pinestreet,
+  start = list(max_l = max(clams_pinestreet$Length), k = 0.1, b = 0))
+
+predict_pinestreet <- clams_pinestreet |>
+  ungroup() |>
+  mutate(predicted_length = predict(pinestreet_vb)) 
+
+clams_raquette <- clams |>
+  filter(location == "RaquettePond") |>
+  group_by(name)
+
+raquette_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_raquette,
+  start = list(max_l = max(clams_raquette$Length), k = 0.1, b = 0))
+
+predict_raquette <- clams_raquette |>
+  ungroup() |>
+  mutate(predicted_length = predict(raquette_vb)) 
+
+clams_unionfallspond <- clams |>
+  filter(location == "UnionFallsPond") |>
+  group_by(name)
+
+unionfallspond_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_unionfallspond,
+  start = list(max_l = max(clams_unionfallspond$Length), k = 0.1, b = 0))
+
+predict_unionfallspond <- clams_unionfallspond |>
+  ungroup() |>
+  mutate(predicted_length = predict(unionfallspond_vb)) 
+
+clams_southcoltonbridge <- clams |>
+  filter(location == "SouthColtonBridge") |>
+  group_by(name)
+
+southcoltonbridge_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_southcoltonbridge,
+  start = list(max_l = max(clams_southcoltonbridge$Length), k = 0.1, b = 0))
+
+predict_southcoltonbridge <- clams_southcoltonbridge |>
+  ungroup() |>
+  mutate(predicted_length = predict(southcoltonbridge_vb)) 
+
+clams_tupperlakenorth <- clams |>
+  filter(location == "TupperLakeNorth") |>
+  group_by(name)
+
+tupperlakenorth_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_tupperlakenorth,
+  start = list(max_l = max(clams_tupperlakenorth$Length), k = 0.1, b = 0))
+
+predict_tupperlakenorth <- clams_tupperlakenorth |>
+  ungroup() |>
+  mutate(predicted_length = predict(tupperlakenorth_vb)) 
+
+clams_tupperhorseshoe <- clams |>
+  filter(location == "TupperHorseShoeLake") |>
+  group_by(name)
+
+tupperhorseshoe_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
+  data = clams_tupperhorseshoe,
+  start = list(max_l = max(clams_tupperhorseshoe$Length), k = 0.1, b = 0))
+
+predict_tupperhorseshoe <- clams_tupperhorseshoe |>
+  ungroup() |>
+  mutate(predicted_length = predict(tupperhorseshoe_vb)) 
+
+# covariate data
+covariate_data <- read_excel("data/covariate_data.xlsx")
+
+# Bind growth predictions into one data set
+predictions <- bind_rows(predict_unionfallspond, predict_southcoltonbridge, predict_tupperlakenorth, predict_tupperhorseshoe, predict_raquette, predict_pinestreet, predict_piercefield, predict_norwood, predict_norfolk, predict_norfolksm, predict_mountain, predict_mirror, predict_massena, predict_longlake, predict_lehman, predict_lakeclear, predict_lakeflower, predict_horseshoe, predict_heuvelton, predict_govpark, predict_eelweir, predict_dekalb, predict_copper, predict_colton, predict_briggs, predict_blacklake)
+
+# add with lake/river data
+clams_predictions_waterbody <- predictions |> left_join(covariate_data, by = "location")
+
+# plot 
+ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
+  geom_line(aes(y = predicted_length, group = name), linewidth = 1) +
+  theme_bw() +
+  labs(x = "Growth Period", y = "Length", title = "Growth Curves by Lakes and Rivers") +
+  facet_wrap(~body) + 
+  geom_smooth()
+```
+
+# Bayesian Algorithm
+
+-   Estimate the parameters of the growth curve for river and lake clams.
+
+-   Made with a Bayesian framework, where it considers both prior and current information to make a decision to take into account missing data and uncertainty. 
 
 
+```{r}
+# Rivers
+
+# get and read data
+clams <- read_csv("data/clams_clean.csv")
+covariate_data <- read_excel("data/covariate_data.xlsx")
+clams <- clams |> left_join(covariate_data, by = "location")
+
+# remove negative values from Coopers Falls, Lake Clear, Mirror Lake
+clams <- clams |> 
+  filter(growth > 0) |>
+  mutate(x = case_when(
+    body == "L" ~ 1,
+    body == "R" ~ 0)) 
+
+# vb function
+
+vb_function <- function(t, max_l, k, b, beta, x) {
+  max_l * (1 - exp(-(k + beta * x) * (t - b)))}
+
+# data for rivers
+rivers <- clams |> 
+  filter(body == "R") |>
+  group_by(name)
+
+# MCMC Algorithm
+
+# step 2 - compute prior log
+
+compute_prior_log <- function(max_l, k, b, sigma2, beta) {
+  dnorm(max_l, mean = 0, sd = 1000, log = TRUE) +
+    dnorm(k, mean = 0, sd = 1000, log = TRUE) +
+    dnorm(b, mean = 0, sd = 1000, log = TRUE) +
+    log(1 / sigma2) +
+    dnorm(beta, mean = 0, sd = 1000, log = TRUE)
+}
+
+# step 4 - compute log likelihood (make function)
+
+compute_likelihood_log <- function(max_l, k, b, sigma2, beta) {
+  dnorm(rivers$Length,
+        mean =  vb_function(rivers$growth_period, max_l, k, b, beta, rivers$x),
+        sd = sqrt(sigma2), log = TRUE) |>
+    sum()
+}
+
+# step 6 - compute posterior log
+
+compute_posterior_log <- function(max_l, k, b, sigma2, beta) {
+  compute_prior_log(max_l, k, b, sigma2, beta) + 
+    compute_likelihood_log(max_l, k, b, sigma2, beta)
+}
+
+
+## define a proposal/jumping distribution to be N(0, 0.1)
+
+## set-up the chain
+niter <- 10000
+
+# set up three empty vectors, one for each parameter
+max_l_store <- rep(NA, 10000)
+b_store <- rep(NA, 10000)
+k_store <- rep(NA, 10000)
+sigma2_store <- rep(NA, 10000)
+beta_store <- rep(NA, 10000)
+  
+  
+# define a starting value
+max_l_store[1] <- 1.2
+k_store[1] <- 0.3183
+b_store[1] <- -0.8749
+sigma2_store[1] <- 30
+beta_store[1] <- 0
+  
+  
+for (i in 2:niter) {
+    
+    ## start with max_l
+    max_l_current <- max_l_store[i - 1]
+    
+    proposal_sd <- 3
+    
+    max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+    
+    alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                             prob = c(alpha_l, 1 - alpha_l))
+    
+    
+   ## start K
+    
+    k_current <- k_store[i - 1]
+    
+    proposal_sd <- 0.05
+    
+    k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+    
+    
+    alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                         prob = c(alpha_k, 1 - alpha_k))
+    
+    
+    # start B
+    
+    b_current <- b_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+    
+    alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1], beta_store[i-1])))
+    
+    b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                         prob = c(alpha_b, 1 - alpha_b))
+    
+    # start sigma2
+    
+    sigma2_current <- sigma2_store[i-1]
+    sigma2_current_log <- sigma2_current |> log()
+    
+    proposal_sd <- 0.2
+    
+    sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
+    sigma2_proposal <- exp(sigma2_proposal_log)
+    
+    alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal, beta_store[i-1]) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current, beta_store[i-1]) - log(sigma2_current)))
+    
+    sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
+                              prob = c(alpha_sigma2, 1 - alpha_sigma2))
+    
+    # start beta
+    beta_current <- beta_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
+    
+    alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
+    
+    beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
+                            prob = c(alpha_beta, 1 - alpha_beta))
+    
+    ## updating one at a time
+}
+  
+  
+plot_df_river <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store,
+                  sigma2_store, beta_store) |> filter(iter > 2000)
+
+# max_l plots
+# river_maxl_line = ggplot(data = plot_df, aes(x = iter, y = max_l)) +
+#  geom_line() 
+
+river_maxl_hist = ggplot(data = plot_df_river, aes(x = max_l)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)  +
+  labs(x = "max_l", y = "frequency",
+       title = "Histogram of max_l for River Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+# k plots
+# river_k_line = ggplot(data = plot_df, aes(x = iter, y = k)) +
+#  geom_line() 
+
+river_k_hist = ggplot(data = plot_df_river, aes(x = k)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  labs(x = "k", y = "frequency",
+       title = "Histogram of k for River Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+# b plots
+#river_b_line = ggplot(data = plot_df, aes(x = iter, y = b)) +
+#  geom_line()
+
+#river_b_hist = ggplot(data = plot_df, aes(x = b)) +
+#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+
+# sigma2 plots
+#river_sigma2_line = ggplot(data = plot_df, aes(x = iter, y = sigma2_store)) +
+#  geom_line()
+
+river_sigma2_hist = ggplot(data = plot_df_river, aes(x = sigma2_store)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  labs(x = "Sigma-Squared", y = "frequency",
+       title = "Histogram of Sigma-Squared for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+# beta plots
+#river_beta_line = ggplot(data = plot_df, aes(x = iter, y = beta_store)) +
+#  geom_line()
+
+#river_beta_hist = ggplot(data = plot_df, aes(x = beta_store)) +
+#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+```
+
+```{r}
+# Lakes
+
+# get and read data
+clams <- read_csv("data/clams_clean.csv")
+covariate_data <- read_excel("data/covariate_data.xlsx")
+clams <- clams |> left_join(covariate_data, by = "location")
+
+# remove negative values from Coopers Falls, Lake Clear, Mirror Lake
+clams <- clams |> 
+  filter(growth > 0) |>
+  mutate(x = case_when(
+    body == "L" ~ 1,
+    body == "R" ~ 0)) 
+
+# vb function
+
+vb_function <- function(t, max_l, k, b, beta, x) {
+  max_l * (1 - exp(-(k + beta * x) * (t - b)))}
+
+# data for lakes
+lakes <- clams |> filter(body == "L") |> group_by(name)
+
+# MCMC Algorithm
+
+# step 2 - compute prior log
+
+compute_prior_log <- function(max_l, k, b, sigma2, beta) {
+  dnorm(max_l, mean = 0, sd = 1000, log = TRUE) +
+    dnorm(k, mean = 0, sd = 1000, log = TRUE) +
+    dnorm(b, mean = 0, sd = 1000, log = TRUE) +
+    log(1 / sigma2) +
+    dnorm(beta, mean = 0, sd = 1000, log = TRUE)
+}
+
+# step 4 - compute log likelihood (make function)
+
+compute_likelihood_log <- function(max_l, k, b, sigma2, beta) {
+  dnorm(lakes$Length,
+        mean =  vb_function(lakes$growth_period, max_l, k, b, beta, lakes$x),
+        sd = sqrt(sigma2), log = TRUE) |>
+    sum()
+}
+
+
+# step 6 - compute posterior log
+
+compute_posterior_log <- function(max_l, k, b, sigma2, beta) {
+  compute_prior_log(max_l, k, b, sigma2, beta) + 
+    compute_likelihood_log(max_l, k, b, sigma2, beta)
+}
+
+
+## define a proposal/jumping distribution to be N(0, 0.1)
+
+## set-up the chain
+niter <- 10000
+
+# set up three empty vectors, one for each parameter
+max_l_store <- rep(NA, 10000)
+b_store <- rep(NA, 10000)
+k_store <- rep(NA, 10000)
+sigma2_store <- rep(NA, 10000)
+beta_store <- rep(NA, 10000)
+  
+  
+# define a starting value
+max_l_store[1] <- 1.2
+k_store[1] <- 0.3183
+b_store[1] <- -0.8749
+sigma2_store[1] <- 30
+beta_store[1] <- 0
+  
+  
+for (i in 2:niter) {
+    
+    ## start with max_l
+    max_l_current <- max_l_store[i - 1]
+    
+    proposal_sd <- 3
+    
+    max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+    
+    alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                             prob = c(alpha_l, 1 - alpha_l))
+    
+    
+   ## start K
+    
+    k_current <- k_store[i - 1]
+    
+    proposal_sd <- 0.05
+    
+    k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+    
+    
+    alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
+    
+    k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                         prob = c(alpha_k, 1 - alpha_k))
+    
+    
+    # start B
+    
+    b_current <- b_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+    
+    alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1], beta_store[i-1])))
+    
+    b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                         prob = c(alpha_b, 1 - alpha_b))
+    
+    # start sigma2
+    
+    sigma2_current <- sigma2_store[i-1]
+    sigma2_current_log <- sigma2_current |> log()
+    
+    proposal_sd <- 0.2
+    
+    sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
+    sigma2_proposal <- exp(sigma2_proposal_log)
+    
+    alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal, beta_store[i-1]) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current, beta_store[i-1]) - log(sigma2_current)))
+    
+    sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
+                              prob = c(alpha_sigma2, 1 - alpha_sigma2))
+    
+    # start beta
+    beta_current <- beta_store[i - 1]
+    
+    proposal_sd <- 0.1
+    
+    beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
+    
+    alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
+    
+    beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
+                            prob = c(alpha_beta, 1 - alpha_beta))
+    
+    ## updating one at a time
+}
+  
+  
+plot_df_lakes <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store,
+                  sigma2_store, beta_store) |> filter(iter > 2000)
+
+# max_l plots
+#lakes_maxl_line = ggplot(data = plot_df, aes(x = iter, y = max_l)) +
+#  geom_line() 
+
+lakes_maxl_hist = ggplot(data = plot_df_lakes, aes(x = max_l)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  labs(x = "max_l", y = "frequency",
+       title = "Histogram of max_l for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16)) 
+
+# k plots
+# lakes_k_line = ggplot(data = plot_df, aes(x = iter, y = k)) + geom_line()
+
+lakes_k_hist = ggplot(data = plot_df_lakes, aes(x = k)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)+
+  labs(x = "k", y = "frequency",
+       title = "Histogram of k for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+# b plots
+#lakes_b_line = ggplot(data = plot_df, aes(x = iter, y = b)) +
+#  geom_line()
+
+#lakes_b_hist = ggplot(data = plot_df, aes(x = b)) +
+#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+
+# sigma2 plots
+#lakes_sigma2_line = ggplot(data = plot_df, aes(x = iter, y = sigma2_store)) +
+#  geom_line()
+
+lakes_sigma2_hist = ggplot(data = plot_df_lakes, aes(x = sigma2_store)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  labs(x = "Sigma-Squared", y = "frequency",
+       title = "Histogram of Sigma-Squared for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+# beta plots
+#lakes_beta_line = ggplot(data = plot_df, aes(x = iter, y = beta_store)) +
+#  geom_line() 
+
+#lakes_beta_hist = ggplot(data = plot_df, aes(x = beta_store)) +
+#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+```
+
+```{r}
+results_river <- plot_df_river |>
+  summarise(mean_l = mean(max_l),
+            sd = sd(max_l),
+            mean_k = mean(k),
+            sd = sd(k),
+            mean_b = mean(b),
+            sd = sd(b),
+            mean_sigma2 = mean(sigma2_store),
+            sd = sd(sigma2_store),
+            mean_beta = mean(beta_store),
+            sd_beta = sd(beta_store)) |>
+  mutate(body = "River")
+
+results_lake <- plot_df_lakes |> 
+  summarise(mean_l = mean(max_l),
+            sd = sd(max_l),
+            mean_k = mean(k),
+            sd = sd(k),
+            mean_b = mean(b),
+            sd = sd(b),
+            mean_sigma2 = mean(sigma2_store),
+            sd = sd(sigma2_store),
+            mean_beta = mean(beta_store),
+            sd_beta = sd(beta_store)) |> 
+  mutate(body = "Lake")
+  
+
+results <- bind_rows(results_lake, results_river)
+
+results
+```
+
+```{r}
+# estimate max_l for rivers and lakes 
+river_maxl_hist
+lakes_maxl_hist
+```
+
+```{r}
+# estimate k for rivers and lakes
+river_k_hist
+lakes_k_hist
+```
+
+```{r}
+# estimate sigma2 for rivers and lakes
+river_sigma2_hist
+lakes_sigma2_hist
+```
+
+# Take Aways
+
+- River clams have higher growth rates, max lengths, and sigma-squares than lake clams.
+
+- This differences in parameters mean that river clams grow at a faster rate and achieve a longer length overall than lake clams.
+
+- River water is less acidic than lake water. Clam shells are made out of calcium carbonate, which dissolve in acidic water. Differences in acidity between lake and rivers may partially explain the differences in shell length. 
+
+# Further Study
+
+- 
