@@ -160,6 +160,8 @@ Then, the algorithm computes the log likelihood. The log likelihood component is
 After the log-prior and log-likelihood is definied, a function is created to find the log-posterior, which is the sum of the log-prior and log-likelihood. 
 
 
+- Fossilized clams may be damaged or incomplete due to erosion, dissolution, or abrasion, therefore they may have missing growth periods. Therefore, not every clam's first growth period represents their first year of growth and not every clam's last growth period represents their last year of life. 
+
 
 
 

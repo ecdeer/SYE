@@ -3,9 +3,7 @@ title: "Modeling Growth Rates of Fossilized Bivalves Using Bayesian Statistics"
 author:
   - name: Emma Deering
 affiliation:
-  - address: Department of Math, Computer Science, and Statistics
-  - address: St. Lawrence University
-  - address: Advised by Dr. Matt Higham
+  - address: Department of Math, Computer Science, and Statistics <br> St. Lawrence University <br> Advised by Dr. Matt Higham
 column_numbers: 3
 output: 
   posterdown::posterdown_html:
@@ -83,9 +81,6 @@ $$ where
 
 -   $t_0$ is time where length is 0
 
-Blue line represents the general Von Bertanfly growth model for a collection of clams in a specific location.
-
-
 ```{r}
 # sample von bertanfly growth model - simple
 
@@ -115,19 +110,18 @@ norfolksm <- ggplot(predict_norfolksm,
   geom_line(aes(y = predicted_length),
             color = "darkblue", linewidth = 2) +
   labs(x = "Growth Period", y = "Length",
-       title = "Von Bertanfly Growth Curve Example") + 
+       title = "Von Bertanfly Growth Curve Example",
+       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for a collection of clams in a specific location.")) + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
         plot.subtitle = element_text(size = 16),
         axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16))
-
-norfolksm
+        axis.title.y = element_text(size = 16), 
+        plot.caption = element_text(
+        size = 14,     
+        hjust = 0.5))   
 ```
-
-The blue line represents the general Von Bertanfly growth model for river clams vs lake clams.
-
 
 ```{r}
 # plot to compare between lakes and rivers
@@ -455,12 +449,28 @@ predictions <- bind_rows(predict_unionfallspond, predict_southcoltonbridge, pred
 clams_predictions_waterbody <- predictions |> left_join(covariate_data, by = "location")
 
 # plot 
-ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
+plot_RL = ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
   geom_line(aes(y = predicted_length, group = name), linewidth = 1) +
   theme_bw() +
-  labs(x = "Growth Period", y = "Length", title = "Growth Curves by Lakes and Rivers") +
+  labs(x = "Growth Period", 
+       y = "Length", 
+       title = "Growth Curves by Lakes and Rivers",
+       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for river vs lake clams.")) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16), 
+        plot.caption = element_text(
+        size = 14,     
+        hjust = 0.5)) +
   facet_wrap(~body) + 
   geom_smooth()
+```
+
+```{r}
+norfolksm
+plot_RL
 ```
 
 # Bayesian Algorithm
@@ -897,7 +907,7 @@ maxl_line = ggplot(data = graphs_df, aes(x = iter, y = max_l)) +
   geom_line() +
   facet_wrap(~body) +
   labs(x = "iter", y = "max_l",
-       title = "max_l by Iteration for Lake Clams") + 
+       title = "Lake vs. River: Value of max_l through Each Iteration") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -909,7 +919,7 @@ maxl_hist = ggplot(data = graphs_df, aes(x = max_l)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
   facet_wrap(~body) +
   labs(x = "max_l", y = "frequency",
-       title = "Histogram of max_l by Lake and River") + 
+       title = "Lake vs. River: Histogram of max_l Values") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -922,7 +932,7 @@ k_line = ggplot(data = graphs_df, aes(x = iter, y = k)) +
   geom_line() +
   facet_wrap(~body) +
   labs(x = "iter", y = "k",
-       title = "K by Iteration for Lake Clams") + 
+       title = "Lake vs. River: Value of K through Each Iteration") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -934,16 +944,19 @@ k_hist = ggplot(data = graphs_df, aes(x = k)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
   facet_wrap(~body) +
   labs(x = "k", y = "frequency",
-       title = "Histogram of k for Lake Clams") + 
+       title = "Lake vs. River: Histogram of k Values") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
         plot.subtitle = element_text(size = 16),
         axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16))
+        axis.title.y = element_text(size = 16),
+        plot.caption = element_text(
+        size = 14,     
+        hjust = 0.5))
 ```
 
-```{r}
+```{r, out.width= "70%", fig.align='center'}
 # estimate max_l for rivers and lakes 
 #river_maxl_line
 #lakes_maxl_line
@@ -966,15 +979,15 @@ k_hist
 
 # Take Aways
 
-- River clams have much higher asymptotic length than lake clams, meaning that river clams grow to longer overall lengths. 
+- River clams grow to longer overall lengths. 
 
-- Lake clams have a faster growth rate than river clams, meaning that lake clams reach their asymptotic length twice as fast as river clams. 
+- Lake clams reach their asymptotic length twice as fast as river clams. 
 
 - River water is less acidic than lake water. Clam shells are made out of calcium carbonate, which dissolve in acidic water. Differences in acidity between lake and rivers may partially explain the differences in shell length and growth rate. 
 
-- Rivers flowing nature promotes long-term growth by continuously delivering organic particles for filter feeding and maintaining higher dissolved oxygen levels, explaining the longer length.
+- River current promotes long-term growth by delivering organic particles for filter feeding and maintaining higher dissolved oxygen levels, explaining the longer length.
 
-# References and Acknowledgements
+# References
 
 - Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! An introduction to applied Bayesian modeling. https://www.bayesrulesbook.com/
 
