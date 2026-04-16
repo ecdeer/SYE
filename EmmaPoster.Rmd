@@ -41,7 +41,7 @@ Exploring how growth rates of fossilized clams change across environmental condi
 
 -   Estimate model parameters using a MCMC algorithm.
 
--   Incorporate a Bayesian framework to account for uncertainty and missing data.
+-   Incorporate a Bayesian framework to account for uncertainty.
 
 # Data
 
@@ -53,9 +53,9 @@ Exploring how growth rates of fossilized clams change across environmental condi
 
     -   Growth Period: Indicates annual stage of growth.
 
-    -   Length: Overall length of shell
+    -   Length: Overall length of shell.
 
-    -   Growth: Total growth during that growth period
+    -   Growth: Total growth during that growth period.
 
     -   Body: Indicates if water body was a lake or river.
 
@@ -71,15 +71,15 @@ $$
 L(t) = L \cdot (1 - e^{-k \cdot (t-t_0)})
 $$ where
 
--   $t$ is time
+-   $t$ is time.
 
--   $L(t)$ is mean length at time t
+-   $L(t)$ is mean length at time t.
 
--   $L$ is the asymptotic length
+-   $max\_l$ is the asymptotic length.
 
--   $k$ is the growth rate
+-   $k$ is how quickly the clams reaches $max\_l$.
 
--   $t_0$ is time where length is 0
+-   $b$ is time where length is 0.
 
 ```{r}
 # sample von bertanfly growth model - simple
@@ -111,7 +111,7 @@ norfolksm <- ggplot(predict_norfolksm,
             color = "darkblue", linewidth = 2) +
   labs(x = "Growth Period", y = "Length",
        title = "Von Bertanfly Growth Curve Example",
-       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for a collection of clams in a specific location.")) + 
+       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for a collection of clams in a specific location. Black lines represent the growth of each clam in the locality.")) + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -455,7 +455,7 @@ plot_RL = ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y =
   labs(x = "Growth Period", 
        y = "Length", 
        title = "Growth Curves by Lakes and Rivers",
-       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for river vs lake clams.")) +
+       caption = stringr::str_wrap("Blue line represents the general Von Bertanfly growth model for river vs lake clams. Black lines represent the growth of each clam in the locality.")) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
         plot.subtitle = element_text(size = 16),
@@ -476,8 +476,6 @@ plot_RL
 # Bayesian Algorithm
 
 -   Estimate the parameters of the growth curve for river and lake clams.
-
--   Made with a Bayesian framework, where it considers both prior and current information to make a decision to take into account missing data and uncertainty. 
 
 ```{r}
 # Rivers
@@ -874,13 +872,9 @@ lakes_sigma2_hist = ggplot(data = plot_df_lakes, aes(x = sigma2_store)) +
 ```{r}
 results_river <- plot_df_river |>
   summarise(median_l = median(max_l),
-            sd = sd(max_l),
             median_k = median(k),
-            sd = sd(k),
             median_b = median(b),
-            sd = sd(b),
-            median_sigma2 = median(sigma2_store),
-            sd = sd(sigma2_store)) |>
+            median_sigma2 = median(sigma2_store))|>
   mutate(body = "River")
 
 results_lake <- plot_df_lakes |> 
@@ -915,11 +909,11 @@ maxl_line = ggplot(data = graphs_df, aes(x = iter, y = max_l)) +
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
 
-maxl_hist = ggplot(data = graphs_df, aes(x = max_l)) +
-  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
-  facet_wrap(~body) +
+maxl_hist = ggplot(data = graphs_df, aes(x = max_l, fill = body)) +
+  scale_fill_manual(values = c("Lake" = "steelblue", "River" = "navy")) + 
+  geom_histogram(bins = 15, colour = "black") +
   labs(x = "max_l", y = "frequency",
-       title = "Lake vs. River: Histogram of max_l Values") + 
+       title = "Lake vs. River: Histogram of max_l Values") +   
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -940,42 +934,33 @@ k_line = ggplot(data = graphs_df, aes(x = iter, y = k)) +
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
 
-k_hist = ggplot(data = graphs_df, aes(x = k)) +
-  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
-  facet_wrap(~body) +
+k_hist = ggplot(data = graphs_df, aes(x = k, fill = body)) +
+  scale_fill_manual(values = c("Lake" = "steelblue", "River" = "navy")) + 
+  geom_histogram(bins = 15, colour = "black") +
   labs(x = "k", y = "frequency",
-       title = "Lake vs. River: Histogram of k Values") + 
+       title = "Lake vs. River: Histogram of k Values") +   
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
         plot.subtitle = element_text(size = 16),
         axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16),
-        plot.caption = element_text(
-        size = 14,     
-        hjust = 0.5))
+        axis.title.y = element_text(size = 16))
 ```
 
 ```{r, out.width= "70%", fig.align='center'}
-# estimate max_l for rivers and lakes 
-#river_maxl_line
-#lakes_maxl_line
-#river_maxl_hist
-#lakes_maxl_hist
-# estimate k for rivers and lakes
-#river_k_line
-#lakes_k_line
-#river_k_hist
-#lakes_k_hist
-
-maxl_line
-
 maxl_hist
+```
+River clams have larger maximum lengths than lake clams. This means that river clams grow longer. 
 
-k_line
-
+```{r, out.width= "70%", fig.align='center'}
 k_hist
 ```
+Lake clams have a larger k. This means that lake clams reach their maximum length quicker than river clams. 
+
+```{r, out.width= "70%", fig.align='center'}
+lakes_maxl_line
+```
+The values for max_l fluctuate around a similar value, meaning that the algorithm converges. 
 
 # Take Aways
 
@@ -987,8 +972,16 @@ k_hist
 
 - River current promotes long-term growth by delivering organic particles for filter feeding and maintaining higher dissolved oxygen levels, explaining the longer length.
 
-# References
+# Future Direction
+
+- Improve the algorithm to account for uncertainty in the timing of the initial observed growth period relative to actual age.
+
+- Expand the algorithm to estimate parameters for every location. 
+
+# References and Acknowledgements
 
 - Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! An introduction to applied Bayesian modeling. https://www.bayesrulesbook.com/
 
 - Windsland, K., Hvingel, C., Nilssen, E. M., & Sundet, J. H. (2013). Evaluation of von Bertalanffy growth curves for the introduced red king crab (Paralithodes camtschaticus) in Norwegian waters. Fisheries Research, 145, 15–21. https://doi.org/10.1016/j.fishres.2013.03.003
+
+- Thank you to Dr. Judith Nagel-Myers for letting me use her data. 
