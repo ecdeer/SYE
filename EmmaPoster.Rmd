@@ -932,7 +932,7 @@ k_line = ggplot(data = graphs_df, aes(x = iter, y = k)) +
   geom_line() +
   facet_wrap(~body) +
   labs(x = "iter", y = "k",
-       title = "Lake vs. River: Value of K through Each Iteration") + 
+       title = "Lake vs. River: Value of k through Each Iteration") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -979,7 +979,7 @@ k_hist
 
 # Take Aways
 
-- River clams grow to longer overall lengths. 
+- River clams grow to longer overall lengths than lake clams. 
 
 - Lake clams reach their asymptotic length twice as fast as river clams. 
 
