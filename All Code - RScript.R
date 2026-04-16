@@ -17,7 +17,7 @@ clams <- clams |>
   mutate(x = case_when(
     body == "L" ~ 1,
     body == "R" ~ 0)) 
-# |> group_by(name) - this is for all the data
+  |> group_by(name) 
 
 # vb function
 
@@ -30,9 +30,9 @@ vb_function <- function(t, max_l, k, b, beta, x) {
 #  group_by(name)
 
 # data for rivers
-rivers <- clams |> 
-  filter(body == "R") |>
-  group_by(name)
+#rivers <- clams |> 
+#  filter(body == "R") |>
+#  group_by(name)
 
 # data for lakes
 # lakes <- clams |> 

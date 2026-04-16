@@ -30,11 +30,6 @@ library(dplyr)
 library(ggplot2)
 library(readr)
 library(pander)
-library(nlme)
-library(mgcv)
-library(hms)
-library(broom)
-library(modelr)
 library(readxl)
 ```
 
@@ -75,7 +70,7 @@ Exploring how growth rates of fossilized clams change across environmental condi
 Von Bertanfly growth model models clam growth as length versus age, capturing decreasing growth rates over time typical of organism development.
 
 $$
-L(t) = L \cdot (1 - e^{-(k + \beta \cdot x) \cdot (t-t_0)})
+L(t) = L \cdot (1 - e^{-k \cdot (t-t_0)})
 $$ where
 
 -   $t$ is time
@@ -84,13 +79,11 @@ $$ where
 
 -   $L$ is the asymptotic length
 
--   $k$ is the rate
-
--   $\beta$ adjusts the growth rate based on acidity
-
--   $x$ is binary that indicates acidity
+-   $k$ is the growth rate
 
 -   $t_0$ is time where length is 0
+
+Blue line represents the general Von Bertanfly growth model for a collection of clams in a specific location.
 
 
 ```{r}
@@ -114,15 +107,15 @@ norfolksm_vb <- nls(Length ~ von_bert_function(growth_period, max_l, k, b),
 
 predict_norfolksm <- clams_norfolksm |>
   ungroup() |>
-  mutate(predicted_length = predict(norfolksm_vb)) 
+  mutate(predicted_length = predict(norfolksm_vb))
 
 norfolksm <- ggplot(predict_norfolksm,
   aes(x = growth_period, y = Length)) +
-  geom_point() +
+  geom_line(aes(group = name)) +
   geom_line(aes(y = predicted_length),
             color = "darkblue", linewidth = 2) +
   labs(x = "Growth Period", y = "Length",
-       title = "Growth Curve of Norfolk Clams") + 
+       title = "Von Bertanfly Growth Curve Example") + 
   theme_minimal(base_size = 24, base_rect_size = 50) +
   theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
         axis.text.x  = element_text(size = 12),
@@ -132,6 +125,8 @@ norfolksm <- ggplot(predict_norfolksm,
 
 norfolksm
 ```
+
+The blue line represents the general Von Bertanfly growth model for river clams vs lake clams.
 
 
 ```{r}
@@ -474,7 +469,6 @@ ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) 
 
 -   Made with a Bayesian framework, where it considers both prior and current information to make a decision to take into account missing data and uncertainty. 
 
-
 ```{r}
 # Rivers
 
@@ -492,8 +486,8 @@ clams <- clams |>
 
 # vb function
 
-vb_function <- function(t, max_l, k, b, beta, x) {
-  max_l * (1 - exp(-(k + beta * x) * (t - b)))}
+vb_function <- function(t, max_l, k, b) {
+  max_l * (1 - exp(-k * (t - b)))}
 
 # data for rivers
 rivers <- clams |> 
@@ -502,34 +496,26 @@ rivers <- clams |>
 
 # MCMC Algorithm
 
-# step 2 - compute prior log
 
-compute_prior_log <- function(max_l, k, b, sigma2, beta) {
+compute_prior_log <- function(max_l, k, b, sigma2) {
   dnorm(max_l, mean = 0, sd = 1000, log = TRUE) +
-    dnorm(k, mean = 0, sd = 1000, log = TRUE) +
-    dnorm(b, mean = 0, sd = 1000, log = TRUE) +
-    log(1 / sigma2) +
-    dnorm(beta, mean = 0, sd = 1000, log = TRUE)
+  dnorm(k, mean = 0, sd = 1000, log = TRUE) +
+  dnorm(b, mean = 0, sd = 1000, log = TRUE) +
+  log(1 / sigma2)
 }
 
-# step 4 - compute log likelihood (make function)
-
-compute_likelihood_log <- function(max_l, k, b, sigma2, beta) {
+compute_likelihood_log <- function(max_l, k, b, sigma2) {
   dnorm(rivers$Length,
-        mean =  vb_function(rivers$growth_period, max_l, k, b, beta, rivers$x),
+        mean =  vb_function(rivers$growth_period, max_l, k, b),
         sd = sqrt(sigma2), log = TRUE) |>
     sum()
 }
 
-# step 6 - compute posterior log
-
-compute_posterior_log <- function(max_l, k, b, sigma2, beta) {
-  compute_prior_log(max_l, k, b, sigma2, beta) + 
-    compute_likelihood_log(max_l, k, b, sigma2, beta)
+compute_posterior_log <- function(max_l, k, b, sigma2) {
+  compute_prior_log(max_l, k, b, sigma2) + 
+    compute_likelihood_log(max_l, k, b, sigma2)
 }
 
-
-## define a proposal/jumping distribution to be N(0, 0.1)
 
 ## set-up the chain
 niter <- 10000
@@ -539,7 +525,6 @@ max_l_store <- rep(NA, 10000)
 b_store <- rep(NA, 10000)
 k_store <- rep(NA, 10000)
 sigma2_store <- rep(NA, 10000)
-beta_store <- rep(NA, 10000)
   
   
 # define a starting value
@@ -547,89 +532,83 @@ max_l_store[1] <- 1.2
 k_store[1] <- 0.3183
 b_store[1] <- -0.8749
 sigma2_store[1] <- 30
-beta_store[1] <- 0
   
   
 for (i in 2:niter) {
     
-    ## start with max_l
-    max_l_current <- max_l_store[i - 1]
-    
-    proposal_sd <- 3
-    
-    max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
-    
-    alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
-    
-    max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
-                             prob = c(alpha_l, 1 - alpha_l))
-    
-    
-   ## start K
-    
-    k_current <- k_store[i - 1]
-    
-    proposal_sd <- 0.05
-    
-    k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
-    
-    
-    alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
-    
-    k_store[i] <- sample(c(k_proposal, k_current), size = 1,
-                         prob = c(alpha_k, 1 - alpha_k))
-    
-    
-    # start B
-    
-    b_current <- b_store[i - 1]
-    
-    proposal_sd <- 0.1
-    
-    b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
-    
-    alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1], beta_store[i-1])))
-    
-    b_store[i] <- sample(c(b_proposal, b_current), size = 1,
-                         prob = c(alpha_b, 1 - alpha_b))
-    
-    # start sigma2
-    
-    sigma2_current <- sigma2_store[i-1]
-    sigma2_current_log <- sigma2_current |> log()
-    
-    proposal_sd <- 0.2
-    
-    sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
-    sigma2_proposal <- exp(sigma2_proposal_log)
-    
-    alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal, beta_store[i-1]) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current, beta_store[i-1]) - log(sigma2_current)))
-    
-    sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
-                              prob = c(alpha_sigma2, 1 - alpha_sigma2))
-    
-    # start beta
-    beta_current <- beta_store[i - 1]
-    
-    proposal_sd <- 0.1
-    
-    beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
-    
-    alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
-    
-    beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
-                            prob = c(alpha_beta, 1 - alpha_beta))
-    
-    ## updating one at a time
+     ## start with max_l
+  max_l_current <- max_l_store[i - 1]
+
+  proposal_sd <- 3
+
+  max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+
+  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1])))
+
+  max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                           prob = c(alpha_l, 1 - alpha_l))
+
+
+  ## start K
+
+  k_current <- k_store[i - 1]
+
+  proposal_sd <- 0.05
+
+  k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+
+
+  alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1])))
+
+  k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                       prob = c(alpha_k, 1 - alpha_k))
+
+
+  # start B
+
+  b_current <- b_store[i - 1]
+
+  proposal_sd <- 0.1
+
+  b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+
+  alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1])))
+
+  b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                       prob = c(alpha_b, 1 - alpha_b))
+
+  # start sigma2
+
+  sigma2_current <- sigma2_store[i-1]
+  sigma2_current_log <- sigma2_current |> log()
+
+  proposal_sd <- 0.2
+
+  sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
+  sigma2_proposal <- exp(sigma2_proposal_log)
+
+  alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current) - log(sigma2_current)))
+
+  sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
+                            prob = c(alpha_sigma2, 1 - alpha_sigma2))
 }
   
   
 plot_df_river <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store,
-                  sigma2_store, beta_store) |> filter(iter > 2000)
+                  sigma2_store) |> filter(iter > 2000)
 
 # max_l plots
-# river_maxl_line = ggplot(data = plot_df, aes(x = iter, y = max_l)) +
-#  geom_line() 
+river_maxl_line = ggplot(data = plot_df_river, aes(x = iter, y = max_l)) +
+  geom_line() +
+  labs(x = "iter", y = "max_l",
+       title = "max_l by Iteration for River Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
 
 river_maxl_hist = ggplot(data = plot_df_river, aes(x = max_l)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)  +
@@ -643,8 +622,17 @@ river_maxl_hist = ggplot(data = plot_df_river, aes(x = max_l)) +
         axis.title.y = element_text(size = 16))
 
 # k plots
-# river_k_line = ggplot(data = plot_df, aes(x = iter, y = k)) +
-#  geom_line() 
+river_k_line = ggplot(data = plot_df_river, aes(x = iter, y = k)) +
+  geom_line() +
+  labs(x = "iter", y = "k",
+       title = "K by Iteration for River Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
 
 river_k_hist = ggplot(data = plot_df_river, aes(x = k)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
@@ -658,15 +646,15 @@ river_k_hist = ggplot(data = plot_df_river, aes(x = k)) +
         axis.title.y = element_text(size = 16))
 
 # b plots
-#river_b_line = ggplot(data = plot_df, aes(x = iter, y = b)) +
-#  geom_line()
+river_b_line = ggplot(data = plot_df_river, aes(x = iter, y = b)) +
+  geom_line()
 
-#river_b_hist = ggplot(data = plot_df, aes(x = b)) +
-#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+river_b_hist = ggplot(data = plot_df_river, aes(x = b)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 
 # sigma2 plots
-#river_sigma2_line = ggplot(data = plot_df, aes(x = iter, y = sigma2_store)) +
-#  geom_line()
+river_sigma2_line = ggplot(data = plot_df_river, aes(x = iter, y = sigma2_store)) +
+  geom_line()
 
 river_sigma2_hist = ggplot(data = plot_df_river, aes(x = sigma2_store)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
@@ -678,13 +666,6 @@ river_sigma2_hist = ggplot(data = plot_df_river, aes(x = sigma2_store)) +
         plot.subtitle = element_text(size = 16),
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
-
-# beta plots
-#river_beta_line = ggplot(data = plot_df, aes(x = iter, y = beta_store)) +
-#  geom_line()
-
-#river_beta_hist = ggplot(data = plot_df, aes(x = beta_store)) +
-#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 ```
 
 ```{r}
@@ -704,43 +685,32 @@ clams <- clams |>
 
 # vb function
 
-vb_function <- function(t, max_l, k, b, beta, x) {
-  max_l * (1 - exp(-(k + beta * x) * (t - b)))}
+vb_function <- function(t, max_l, k, b) {
+  max_l * (1 - exp(-k * (t - b)))}
 
 # data for lakes
 lakes <- clams |> filter(body == "L") |> group_by(name)
 
-# MCMC Algorithm
 
-# step 2 - compute prior log
-
-compute_prior_log <- function(max_l, k, b, sigma2, beta) {
+compute_prior_log <- function(max_l, k, b, sigma2) {
   dnorm(max_l, mean = 0, sd = 1000, log = TRUE) +
-    dnorm(k, mean = 0, sd = 1000, log = TRUE) +
-    dnorm(b, mean = 0, sd = 1000, log = TRUE) +
-    log(1 / sigma2) +
-    dnorm(beta, mean = 0, sd = 1000, log = TRUE)
+  dnorm(k, mean = 0, sd = 1000, log = TRUE) +
+  dnorm(b, mean = 0, sd = 1000, log = TRUE) +
+  log(1 / sigma2)
 }
 
-# step 4 - compute log likelihood (make function)
-
-compute_likelihood_log <- function(max_l, k, b, sigma2, beta) {
+compute_likelihood_log <- function(max_l, k, b, sigma2) {
   dnorm(lakes$Length,
-        mean =  vb_function(lakes$growth_period, max_l, k, b, beta, lakes$x),
+        mean =  vb_function(lakes$growth_period, max_l, k, b),
         sd = sqrt(sigma2), log = TRUE) |>
     sum()
 }
 
-
-# step 6 - compute posterior log
-
-compute_posterior_log <- function(max_l, k, b, sigma2, beta) {
-  compute_prior_log(max_l, k, b, sigma2, beta) + 
-    compute_likelihood_log(max_l, k, b, sigma2, beta)
+compute_posterior_log <- function(max_l, k, b, sigma2) {
+  compute_prior_log(max_l, k, b, sigma2) + 
+    compute_likelihood_log(max_l, k, b, sigma2)
 }
 
-
-## define a proposal/jumping distribution to be N(0, 0.1)
 
 ## set-up the chain
 niter <- 10000
@@ -750,7 +720,6 @@ max_l_store <- rep(NA, 10000)
 b_store <- rep(NA, 10000)
 k_store <- rep(NA, 10000)
 sigma2_store <- rep(NA, 10000)
-beta_store <- rep(NA, 10000)
   
   
 # define a starting value
@@ -758,89 +727,82 @@ max_l_store[1] <- 1.2
 k_store[1] <- 0.3183
 b_store[1] <- -0.8749
 sigma2_store[1] <- 30
-beta_store[1] <- 0
   
   
 for (i in 2:niter) {
     
-    ## start with max_l
-    max_l_current <- max_l_store[i - 1]
-    
-    proposal_sd <- 3
-    
-    max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
-    
-    alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
-    
-    max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
-                             prob = c(alpha_l, 1 - alpha_l))
-    
-    
-   ## start K
-    
-    k_current <- k_store[i - 1]
-    
-    proposal_sd <- 0.05
-    
-    k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
-    
-    
-    alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1], beta_store[i-1])))
-    
-    k_store[i] <- sample(c(k_proposal, k_current), size = 1,
-                         prob = c(alpha_k, 1 - alpha_k))
-    
-    
-    # start B
-    
-    b_current <- b_store[i - 1]
-    
-    proposal_sd <- 0.1
-    
-    b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
-    
-    alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1], beta_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1], beta_store[i-1])))
-    
-    b_store[i] <- sample(c(b_proposal, b_current), size = 1,
-                         prob = c(alpha_b, 1 - alpha_b))
-    
-    # start sigma2
-    
-    sigma2_current <- sigma2_store[i-1]
-    sigma2_current_log <- sigma2_current |> log()
-    
-    proposal_sd <- 0.2
-    
-    sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
-    sigma2_proposal <- exp(sigma2_proposal_log)
-    
-    alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal, beta_store[i-1]) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current, beta_store[i-1]) - log(sigma2_current)))
-    
-    sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
-                              prob = c(alpha_sigma2, 1 - alpha_sigma2))
-    
-    # start beta
-    beta_current <- beta_store[i - 1]
-    
-    proposal_sd <- 0.1
-    
-    beta_proposal <- rnorm(1, mean = beta_current, sd = proposal_sd)
-    
-    alpha_beta <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_store[i], beta_current)))
-    
-    beta_store[i] <- sample(c(beta_proposal, beta_current), size = 1,
-                            prob = c(alpha_beta, 1 - alpha_beta))
-    
-    ## updating one at a time
+     ## start with max_l
+  max_l_current <- max_l_store[i - 1]
+
+  proposal_sd <- 3
+
+  max_l_proposal <- rnorm(1, mean = max_l_current, sd = proposal_sd)
+
+  alpha_l <- min(1, exp(compute_posterior_log(max_l_proposal, k_store[i-1], b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_current, k_store[i-1], b_store[i-1], sigma2_store[i-1])))
+
+  max_l_store[i] <- sample(c(max_l_proposal, max_l_current), size = 1,
+                           prob = c(alpha_l, 1 - alpha_l))
+
+
+  ## start K
+
+  k_current <- k_store[i - 1]
+
+  proposal_sd <- 0.05
+
+  k_proposal <- rnorm(1, mean = k_current, sd = proposal_sd)
+
+
+  alpha_k <- min(1, exp(compute_posterior_log(max_l_store[i], k_proposal, b_store[i-1], sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_current, b_store[i-1], sigma2_store[i-1])))
+
+  k_store[i] <- sample(c(k_proposal, k_current), size = 1,
+                       prob = c(alpha_k, 1 - alpha_k))
+
+
+  # start B
+
+  b_current <- b_store[i - 1]
+
+  proposal_sd <- 0.1
+
+  b_proposal <- rnorm(1, mean = b_current, sd = proposal_sd)
+
+  alpha_b <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_proposal, sigma2_store[i-1]) - compute_posterior_log(max_l_store[i], k_store[i], b_current, sigma2_store[i-1])))
+
+  b_store[i] <- sample(c(b_proposal, b_current), size = 1,
+                       prob = c(alpha_b, 1 - alpha_b))
+
+  # start sigma2
+
+  sigma2_current <- sigma2_store[i-1]
+  sigma2_current_log <- sigma2_current |> log()
+
+  proposal_sd <- 0.2
+
+  sigma2_proposal_log <- rnorm(1, mean = sigma2_current_log, sd = proposal_sd)
+  sigma2_proposal <- exp(sigma2_proposal_log)
+
+  alpha_sigma2 <- min(1, exp(compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_proposal) + log(sigma2_proposal) - compute_posterior_log(max_l_store[i], k_store[i], b_store[i], sigma2_current) - log(sigma2_current)))
+
+  sigma2_store[i] <- sample(c(sigma2_proposal, sigma2_current), size = 1,
+                            prob = c(alpha_sigma2, 1 - alpha_sigma2))
 }
   
   
 plot_df_lakes <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_store,
-                  sigma2_store, beta_store) |> filter(iter > 2000)
+                  sigma2_store) |> filter(iter > 2000)
 
 # max_l plots
-#lakes_maxl_line = ggplot(data = plot_df, aes(x = iter, y = max_l)) +
-#  geom_line() 
+lakes_maxl_line = ggplot(data = plot_df_lakes, aes(x = iter, y = max_l)) +
+  geom_line() +
+  labs(x = "iter", y = "max_l",
+       title = "max_l by Iteration for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
 
 lakes_maxl_hist = ggplot(data = plot_df_lakes, aes(x = max_l)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
@@ -854,7 +816,16 @@ lakes_maxl_hist = ggplot(data = plot_df_lakes, aes(x = max_l)) +
         axis.title.y = element_text(size = 16)) 
 
 # k plots
-# lakes_k_line = ggplot(data = plot_df, aes(x = iter, y = k)) + geom_line()
+lakes_k_line = ggplot(data = plot_df_lakes, aes(x = iter, y = k)) + 
+  geom_line() +
+  labs(x = "iter", y = "k",
+       title = "K by Iteration for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
 
 lakes_k_hist = ggplot(data = plot_df_lakes, aes(x = k)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)+
@@ -868,15 +839,15 @@ lakes_k_hist = ggplot(data = plot_df_lakes, aes(x = k)) +
         axis.title.y = element_text(size = 16))
 
 # b plots
-#lakes_b_line = ggplot(data = plot_df, aes(x = iter, y = b)) +
-#  geom_line()
+lakes_b_line = ggplot(data = plot_df_lakes, aes(x = iter, y = b)) +
+  geom_line()
 
-#lakes_b_hist = ggplot(data = plot_df, aes(x = b)) +
-#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
+lakes_b_hist = ggplot(data = plot_df_lakes, aes(x = b)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 
 # sigma2 plots
-#lakes_sigma2_line = ggplot(data = plot_df, aes(x = iter, y = sigma2_store)) +
-#  geom_line()
+lakes_sigma2_line = ggplot(data = plot_df_lakes, aes(x = iter, y = sigma2_store)) +
+  geom_line()
 
 lakes_sigma2_hist = ggplot(data = plot_df_lakes, aes(x = sigma2_store)) +
   geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
@@ -888,74 +859,123 @@ lakes_sigma2_hist = ggplot(data = plot_df_lakes, aes(x = sigma2_store)) +
         plot.subtitle = element_text(size = 16),
         axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16))
-
-# beta plots
-#lakes_beta_line = ggplot(data = plot_df, aes(x = iter, y = beta_store)) +
-#  geom_line() 
-
-#lakes_beta_hist = ggplot(data = plot_df, aes(x = beta_store)) +
-#  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15)
 ```
 
 ```{r}
 results_river <- plot_df_river |>
-  summarise(mean_l = mean(max_l),
+  summarise(median_l = median(max_l),
             sd = sd(max_l),
-            mean_k = mean(k),
+            median_k = median(k),
             sd = sd(k),
-            mean_b = mean(b),
+            median_b = median(b),
             sd = sd(b),
-            mean_sigma2 = mean(sigma2_store),
-            sd = sd(sigma2_store),
-            mean_beta = mean(beta_store),
-            sd_beta = sd(beta_store)) |>
+            median_sigma2 = median(sigma2_store),
+            sd = sd(sigma2_store)) |>
   mutate(body = "River")
 
 results_lake <- plot_df_lakes |> 
-  summarise(mean_l = mean(max_l),
-            sd = sd(max_l),
-            mean_k = mean(k),
-            sd = sd(k),
-            mean_b = mean(b),
-            sd = sd(b),
-            mean_sigma2 = mean(sigma2_store),
-            sd = sd(sigma2_store),
-            mean_beta = mean(beta_store),
-            sd_beta = sd(beta_store)) |> 
-  mutate(body = "Lake")
+  summarise(median_l = median(max_l),
+            median_k = median(k),
+            median_b = median(b),
+            median_sigma2 = median(sigma2_store)) |>
+              mutate(body = "Lake")
   
 
 results <- bind_rows(results_lake, results_river)
 
-results
+pander(results, caption = "Parameter Estimates for Lakes and Rivers")
+```
+
+```{r}
+# graphs 
+plot_df_lakes <- plot_df_lakes |> mutate(body = "Lake")
+plot_df_river <- plot_df_river |> mutate(body = "River")
+
+graphs_df <- bind_rows(plot_df_lakes, plot_df_river) 
+
+maxl_line = ggplot(data = graphs_df, aes(x = iter, y = max_l)) + 
+  geom_line() +
+  facet_wrap(~body) +
+  labs(x = "iter", y = "max_l",
+       title = "max_l by Iteration for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+maxl_hist = ggplot(data = graphs_df, aes(x = max_l)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  facet_wrap(~body) +
+  labs(x = "max_l", y = "frequency",
+       title = "Histogram of max_l by Lake and River") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+
+k_line = ggplot(data = graphs_df, aes(x = iter, y = k)) + 
+  geom_line() +
+  facet_wrap(~body) +
+  labs(x = "iter", y = "k",
+       title = "K by Iteration for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
+
+k_hist = ggplot(data = graphs_df, aes(x = k)) +
+  geom_histogram(colour = "skyblue4", fill = "skyblue1", bins = 15) +
+  facet_wrap(~body) +
+  labs(x = "k", y = "frequency",
+       title = "Histogram of k for Lake Clams") + 
+  theme_minimal(base_size = 24, base_rect_size = 50) +
+  theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        axis.text.x  = element_text(size = 12),
+        plot.subtitle = element_text(size = 16),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16))
 ```
 
 ```{r}
 # estimate max_l for rivers and lakes 
-river_maxl_hist
-lakes_maxl_hist
-```
-
-```{r}
+#river_maxl_line
+#lakes_maxl_line
+#river_maxl_hist
+#lakes_maxl_hist
 # estimate k for rivers and lakes
-river_k_hist
-lakes_k_hist
-```
+#river_k_line
+#lakes_k_line
+#river_k_hist
+#lakes_k_hist
 
-```{r}
-# estimate sigma2 for rivers and lakes
-river_sigma2_hist
-lakes_sigma2_hist
+maxl_line
+
+maxl_hist
+
+k_line
+
+k_hist
 ```
 
 # Take Aways
 
-- River clams have higher growth rates, max lengths, and sigma-squares than lake clams.
+- River clams have much higher asymptotic length than lake clams, meaning that river clams grow to longer overall lengths. 
 
-- This differences in parameters mean that river clams grow at a faster rate and achieve a longer length overall than lake clams.
+- Lake clams have a faster growth rate than river clams, meaning that lake clams reach their asymptotic length twice as fast as river clams. 
 
-- River water is less acidic than lake water. Clam shells are made out of calcium carbonate, which dissolve in acidic water. Differences in acidity between lake and rivers may partially explain the differences in shell length. 
+- River water is less acidic than lake water. Clam shells are made out of calcium carbonate, which dissolve in acidic water. Differences in acidity between lake and rivers may partially explain the differences in shell length and growth rate. 
 
-# Further Study
+- Rivers flowing nature promotes long-term growth by continuously delivering organic particles for filter feeding and maintaining higher dissolved oxygen levels, explaining the longer length.
 
-- 
+# References and Acknowledgements
+
+- Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! An introduction to applied Bayesian modeling. https://www.bayesrulesbook.com/
+
+- Windsland, K., Hvingel, C., Nilssen, E. M., & Sundet, J. H. (2013). Evaluation of von Bertalanffy growth curves for the introduced red king crab (Paralithodes camtschaticus) in Norwegian waters. Fisheries Research, 145, 15–21. https://doi.org/10.1016/j.fishres.2013.03.003
