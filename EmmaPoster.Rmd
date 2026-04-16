@@ -1,7 +1,7 @@
 ---
 title: "Modeling Growth Rates of Fossilized Bivalves Using Bayesian Statistics"
 author:
-  - name: Emma Deering
+  - name: Emma Deering <br>
 affiliation:
   - address: Department of Math, Computer Science, and Statistics <br> St. Lawrence University <br> Advised by Dr. Matt Higham
 column_numbers: 3
