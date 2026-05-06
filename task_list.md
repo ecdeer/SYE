@@ -1,5 +1,9 @@
 ## Task List
 
+### For Final's Week
+
+1. Send rough draft of paper by Wednesday at noon.
+
 ### For April 9
 
 1. Write abstract and title (bring to meeting on Thursday).
