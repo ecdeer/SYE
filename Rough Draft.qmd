@@ -16,8 +16,10 @@ format:
           \usepackage{setspace}
           \onehalfspacing
           \linespread{2}
+execute: 
+  warning: false
 ---
-```{r}
+```{r, echo = FALSE}
 # libraries
 library(tidyverse)
 library(dplyr)
@@ -28,18 +30,17 @@ library(readxl)
 library(knitr)
 ```
 
-```{r}
+```{r, echo = FALSE}
 # load data
 clams <- read_csv("data/clams_clean.csv")
 ```
 
-*Title:* Modeling Growth Rates of Fossilized Bivalves Using Bayesian Statistics.
 
-*Abstract:*
+**Abstract:**
 
 This study analyzes the growth rates of fossilized clams collected from lakes and rivers across Northern New York to draw conclusions about environmental conditions and how they may impact a bivalve's growth. Dr. Judith Nagel-Myers (Department of Biology and Geology) measured each clam grew during each annual period using shell growth rings. Since clam growth decreases with age, a Von Bertanfly growth model is applied to describe the relationship between shell length and age. To estimate each of the model's parameters, a Markov Chain Monte Carlo (MCMC) Algorithm was built using a Bayesian framework, which allows for uncertainty in the growth model parameters. Our objective is to determine if clam growth rate is different between lake environments and river environments.
 
-*Introduction to Data:*
+**Introduction to Data:**
 
 Clams grow through a process called accretion, where every growing period their shells expand by adding new material to the outer edge. This creates a new visible ring around the shell, similar to tree rings. The number and thickness of these rings depend on a variety of factors, such as climate, food availability, and water conditions.  These rings are preserved in fossilized clam shells, allowing geologists and paleontologists to make conclusions regarding historic clams ages and environmental conditions. 
 
@@ -55,9 +56,9 @@ The data set contains the following useful variables:
 | Length | Overall length of valve.                        |
 | Growth | Total growth during specified growth period. |
 
-*Introduction to Growth Model:*
+**Introduction to Growth Model:**
 
-For this study, the Von Bertalanfly Growth Model was chosen because it is specifically designed to describe biological growth that slows over time, a growth pattern characteristic of bivalves. Unlike linear or exponential models, the Von Bertanfly Growth Model reflects the biological reality that organisms grow rapidly in the early life stages and slow over time. This growth pattern makes the model well-suited for analyzing clam growth, especially when working with fossilized specimens where size and age relationships can be reconstructed. 
+For this study, the Von Bertanfly Growth Model was chosen because it is specifically designed to describe biological growth that slows over time, a growth pattern characteristic of bivalves. Unlike linear or exponential models, the Von Bertanfly Growth Model reflects the biological reality that organisms grow rapidly in the early life stages and slow over time. This growth pattern makes the model well-suited for analyzing clam growth, especially when working with fossilized specimens where size and age relationships can be reconstructed. 
 
 The model can be expressed as:
 
@@ -545,9 +546,6 @@ In simple terms, this part of the code repeatedly tests many possible values for
 The algorithm does this for every parameter until it finds the best combination of parameters for the data. Early on in the iterations, the estimations vary greatly, but as the iterations near 10,000, the model typically converges to one singular value or estimation for the parameter. 
 
 ```{r}
-# hide
-# Rivers
-
 # get and read data
 clams <- read_csv("data/clams_clean.csv")
 covariate_data <- read_excel("data/covariate_data.xlsx")
@@ -961,7 +959,7 @@ lakes_k_hist
 
 The parameters tested in the algorithm are relatively normal for river and lake clams. 
 
-```{r}
+```{r, echo = FALSE}
 results_river <- plot_df_river |>
   summarise(median_l = median(max_l),
             median_k = median(k),
