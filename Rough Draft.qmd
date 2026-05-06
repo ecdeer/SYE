@@ -949,7 +949,7 @@ river_k_line
 lakes_k_line
 ```
 
-The parameters typically converge for both river and lake clams.
+The parameters typically converge for both river and lake clams. 
 
 ```{r, echo = FALSE}
 river_maxl_hist
