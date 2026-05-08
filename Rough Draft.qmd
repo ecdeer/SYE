@@ -36,11 +36,11 @@ clams <- read_csv("data/clams_clean.csv")
 ```
 
 
-##Abstract:
+## Abstract
 
 This study analyzes the growth rates of fossilized clams collected from lakes and rivers across Northern New York to draw conclusions about environmental conditions and how they may impact a bivalve's growth. Dr. Judith Nagel-Myers (Department of Biology and Geology) measured each clam grew during each annual period using shell growth rings. Since clam growth decreases with age, a Von Bertanfly growth model is applied to describe the relationship between shell length and age. To estimate each of the model's parameters, a Markov Chain Monte Carlo (MCMC) Algorithm was built using a Bayesian framework, which allows for uncertainty in the growth model parameters. Our objective is to determine if clam growth rate is different between lake environments and river environments.
 
-##Introduction to Data:
+## Introduction to Data
 
 Clams grow through a process called accretion, where every growing period their shells expand by adding new material to the outer edge. This creates a new visible ring around the shell, similar to tree rings. The number and thickness of these rings depend on a variety of factors, such as climate, food availability, and water conditions.  These rings are preserved in fossilized clam shells, allowing geologists and paleontologists to make conclusions regarding historic clams ages and environmental conditions. 
 
@@ -56,9 +56,9 @@ The data set contains the following useful variables:
 | Length | Overall length of valve.                        |
 | Growth | Total growth during specified growth period. |
 
-##Introduction to Growth Model:
+## Introduction to Growth Model
 
-For this study, the Von Bertanfly Growth Model was chosen because it is specifically designed to describe biological growth that slows over time, a growth pattern characteristic of bivalves. Unlike linear or exponential models, the Von Bertanfly Growth Model reflects the biological reality that organisms grow rapidly in the early life stages and slow over time. This growth pattern makes the model well-suited for analyzing clam growth, especially when working with fossilized specimens where size and age relationships can be reconstructed. 
+For this study, the Von Bertanfly Growth Model was chosen because it is specifically designed to describe biological growth that slows over time, a growth pattern characteristic of bivalves. Unlike linear or exponential models, the Von Bertanfly Growth Model reflects the the often organisms grow rapidly in the early life stages and slow over time. This growth pattern makes the model well-suited for analyzing clam growth, especially when working with fossilized specimens where size and age relationships can be reconstructed. 
 
 The model can be expressed as:
 
@@ -76,10 +76,11 @@ where
 
 -   $b$ is time where length is 0.
 
-Together, these parameters allow for a detailed interpretation of growth patterns, making it possible to compare how clams develop under different environmental conditions and to infer factors such as habitat quality and resource availability from fossil data. Below is a sample of the Von Bertanfly growth model. Take note of the exponential term which leads to the shape of the curve.
+Together, these parameters allow for a detailed interpretation of growth patterns, making it possible to compare how clams develop under different environmental conditions and to infer environment quality and conditions from fossils. Below is a sample of the Von Bertanfly growth model. Take note of the exponential term which leads to the shape of the curve.
+
 ```{r, echo = FALSE}
 # remove negative values from Coopers Falls, Lake Clear, Mirror Lake
-clams <- clams |> filter(growth > 0)
+clams <- clams |> filter(growth > 0 | is.na(growth) | growth == 0)
 
 clams_norfolksm <- clams |>
   filter(location == "NorfolkSM") |>
@@ -114,9 +115,11 @@ ggplot(predict_norfolksm,
         hjust = 0.5))   
 ```
 
-This plot models how the Von Bertanfly growth method models the growth pattern of a collection of clams. Each black line represents the growth curve of one individual clam. The Von Bertanfly growth model summarizes the population of clams into one curve, modeled by the blue line. The blue line represents the general Von Bertanfly growth model for a collection of clams in a specific population.
+This plot illustrates how the Von Bertanfly growth model describes the growth curve of a population of clams. Each black line represents the growth pattern of an individual clam. While there is a little variation from clam to clam, the overall structure of the growth curve is consistent across the group.
 
-##Data Exploration:
+The blue line represents the Von Bertanfly growth curve for the entire population of clams, summarizing the group into a single curve. This curve illustrates the general relationship between age and size for the group. It creates a  model that represents the average growth of clams in this one location, environment, or population. 
+
+## Data Exploration
 
 This section will explore the data, looking to familiarize with the data's distributions and identify initial relationships between clam growth and water body. 
 
@@ -471,9 +474,9 @@ length_stats <- bind_rows(length_stats_lake, length_stats_river)
 
 pander(length_stats, caption = "Summary Statistics of Total Length: Lakes vs. River")
 ```
-For lake clams, the mean length was 47.3 and the median was 46.25. Because these values are very close, the distribution appears approximately normal with little skew. The standard deviation was 12.9, indicating a moderate spread in clam sizes.
+For lake clams, the mean length was 45.35 and the median was 44.69. Because these values are very close, the distribution appears approximately normal with little skew. The standard deviation was 13.95, indicating a moderate spread in clam sizes.
 
-For river clams, the mean length was 62.81 and the median was 62.52. Similarly, the close agreement between the mean and median suggests a normal distribution with little skew. The standard deviation was 13.32, which is comparable to that of lake clams.
+For river clams, the mean length was 60.98 and the median was 61.23. Again, the similarity between the mean and median suggests a normal distribution with little skew. The standard deviation was 14.83, which is comparable to that of lake clams.
 
 Overall, river clams are larger on average than lake clams, indicating that clams in river environments tend to grow to greater lengths. Despite this difference in average size, the similar standard deviations suggest that the variability in clam size is about the same in both environments.
 
@@ -491,6 +494,8 @@ pander(growth_stats_lake, caption = "Summary Statistics of Growth: Lakes vs. Riv
 ```
 In both environments, growth decreases steadily as the clams age increases, which is consistent with the growth pattern described by the Von Bertanfly growth model. Comparing the two groups, lake and river clams grow similar amounts each growth period. 
 
+Growth period 1 contains NA values because growth is defined as the change between  periods. Since no preceding growth period (growth period 0) exists, the growth for period 1 is undefined and therefore recorded as NA.
+
 Next, the growth curve was modeled for all clams in the data set, regardless of whether the clam originated from a lake or a river. The purpose of this graph is to understand the growth patterns of the data as a whole. 
 
 To create this plot, the growth function was run on every location, creating a growth curve for each locality, as represented by the black lines. The blue line represents the summarized growth curve for all the locations together, illustrating the fossilized clam estimated growth curve for all of Northern New York.  
@@ -504,7 +509,7 @@ ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) 
 ```
 This plot shows that clams tend to have faster growth rates at the beginning of their life, and slows as they get older. However, the timing of the transition from rapid to slower growth varies from location to location.
 
-This graph illustrates the growth curves for lakes and rivers. The purpose of this plot is to be able to compare the growth curves between the two enviroments. 
+This graph illustrates the growth curves for lakes and rivers. The purpose of this plot is to be able to compare the growth curves between the two environments. 
 ```{r, echo=FALSE}
 # plot to compare between lakes and rivers
 ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) +
@@ -524,11 +529,11 @@ ggplot(data = clams_predictions_waterbody,  aes(x = growth_period, y = Length)) 
   facet_wrap(~body) + 
   geom_smooth()
 ```
-The growth curves for lakes vs. clams vary greatly. They have very different asymptotic lengths. This is because lake clams are much shorter than river clams. Additionally, it appears that lake clams start to reach their asymptotic length quicker than river clams.  
+The growth curves for lakes vs. river clams vary greatly. They have very different asymptotic lengths. This is because lake clams are much shorter than river clams. Additionally, it appears that lake clams start to reach their asymptotic length quicker than river clams.  
 
 Overall, as we move into our analysis, we can see that growth rate is affected by age making this data a good candidate for the Von Bertanfly Growth model. But, more interestingly the body of water that the clams originates from appears to be an important factor in its growth, especially in terms of over length achieved and speed at which clams reach this length.
 
-##Introduction to Bayesian Statistics:
+## Introduction to Bayesian Statistics
 
 Fossils, since they are heavily exposed to the outdoors, are often broken or incomplete due to abrasion, erosion, or dissolution. As expected, many of the bivalves in the data are incomplete or broken, making it difficult to determine the true start of growth. Therefore, growth periods marked as growth period 1 are not always their first year of life. To account for these uncertainties, a Bayesian statistical framework is used. Bayesian statistics offer a more flexible approach that can account for uncertainty and missing information. This makes it good for this sort of paleontological data, where preservation is imperfect. 
 
@@ -538,20 +543,33 @@ Bayesian statistics works by combining prior knowledge with current knowledge to
 knitr::include_graphics("Bayes Diagram.jpg")
 ```
 
-##Bayesian Algorithm:##
+## Bayesian Algorithm
 
-For this study, I built an algorithm designed to estimate the parameters of the Von Bertanfly growth model while using a Bayesian framework to account for uncertainty. In this algorithm, we want to estimate four parameters of the Von Bertanfly growth model: max_l, k, b, and sigma-squared. In the following model, the parameter max_l represents the maximum possible length for clams, k represents the growth rate, b represents time where length is 0, and sigma-squared represents the variance. 
+For this study, I built an algorithm designed to estimate the parameters of the Von Bertanfly growth model while using a Bayesian framework to account for uncertainty. In this algorithm, we want to estimate four parameters of the Von Bertanfly growth model: $max\_l$, $k$, $b$, and $\sigma^2$. In the following model, the parameter $max\_l$ represents the maximum possible length for clams, $k$ represents the growth rate, $b$ represents time where length is 0, and $\sigma^2$ represents the variance and errors. 
 
+$$L(t) = max\_l \cdot (1 - e^{-k \cdot (t-b)}) + \sigma^2$$ 
 
+where
 
+-   $t$ is time.
 
-The algorithm runs twice, once for river clams and once for lake clams in order to compare the estimate parameters and results between the two bodies of water. 
+-   $L(t)$ is mean length at time t.
 
-To run the algorithm, we create and define the von Bertanfly growth function to show shell length as a function of time using asymptotic length (max_l), growth rate (k), and time when length is zero (b). 
+-   $max\_l$ is the asymptotic length.
 
-A key component of this algorithm is the prior and posterior distribution functions, which are computed next. The function compote_prior_log() specifies our prior knowledge about the model. It is a probability distribution, in this case a normal distribution, that represents our initials understandings of the data. 
+-   $k$ is how quickly the clams reaches $max\_l$.
 
-The posterior distribution function, compute_posterior_log, is the probability distribution function after taking in the new evidence, also defined as a normal distribution. 
+-   $b$ is time where length is 0.
+
+-   $\sigma^2$ is variance. 
+
+The algorithm runs twice, once for river clams and once for lake clams in order to compare the estimated parameters and results between the two bodies of water. 
+
+To run the algorithm, we create and define the Von Bertanfly growth function to show shell length as a function of time using asymptotic length (max_l), growth rate (k), and time when length is zero (b). 
+
+A key component of this algorithm is the prior and posterior distribution functions, which are computed next. The function compote_prior_log() specifies our prior knowledge about the model. It is a probability distribution, in this case a normal distribution, that represents our initials understandings or knowledge before considering the data. 
+
+The posterior distribution function, compute_posterior_log, is the probability distribution function after taking in the new evidence provided by the dataset, also defined as a normal distribution. Here, the posterior distribution function is updated every time new data and knowledge is added and considered.
 
 In simple terms, this part of the code repeatedly tests many possible values for each parameter until it finds values that best fit the data. It begins by setting initial starting values for all parameters. Then, a loop runs 10,000 times, and during each iteration the parameters are updated one at a time. Going parameter by parameter, the loop makes some adjustments, such as increasing or decreasing the parameter, and evaluates how that new value performs. If it improves the model, the new value for the parameter has a chance of being accepted. 
 
@@ -806,9 +824,9 @@ plot_df_lakes <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_
                   sigma2_store) |> filter(iter > 2000)
 ```
 
-##Results:
+## Results
 
-The results of the algorithm can be reported in two types of graphs: histograms and line plots. These plots demonstrate the distribution of the parameters attempted during each iteration through the algorithm.  
+The results of the algorithm can be reported in two types of graphs: histograms and line plots. These plots demonstrate the distribution of the parameters attempted during each iteration through the algorithm. 
 
 ```{r, echo=FALSE}
 # max_l plots
@@ -952,50 +970,60 @@ lakes_sigma2_hist = ggplot(data = plot_df_lakes, aes(x = sigma2_store)) +
         axis.title.y = element_text(size = 16))
 ```
 
-This plot below illustrates the results from the algorithm for the estimation of $max_l$ for river clams. 
+This plot below illustrates the results from the algorithm for the estimation of $max\_l$ for river clams. 
 ```{r, echo = FALSE}
 river_maxl_line
 ```
-The algorithm converged at about 89, meaning this is the algorithm's estimation for the $max_l$ parameter for river clams. Around this value, the graph begins to level off, suggesting that the estimate has stabilized. In the earlier iterations, the estimate increased steadily, but after roughly 6000 iterations, it stopped increasing and remained close to 89.
+The algorithm converged in the mid-80s, meaning this is the algorithm's estimation for the $max\_l$ parameter for river clams. Around this value, the graph begins to level off, suggesting that the estimate has stabilized. In the earlier iterations, the estimate increased steadily, but after roughly 4,000 iterations, it stopped increasing and remained close to the accepted value. The late convergence suggests that a different starting value for $max\_l$ should be used.
 
-This plot below illustrates the results from the algorithm for the estimation of $max_l$ for lake clams. 
+This plot below illustrates the results from the algorithm for the estimation of $max\_l$ for lake clams. 
 ```{r, echo = FALSE}
 lakes_maxl_line
 ```
-The algorithm converged at about 57, meaning this is the algorithm's estimation for the $max_l$ parameter for lake clams. Around this value, the graph begins to level off, suggesting that the estimate has stabilized. Across all iterations the algorithm stayed consistent around this value. 
+The algorithm converged at about 57, meaning this is the algorithm's estimation for the $max\_l$ parameter for lake clams. Around this value, the graph levels off, suggesting that the estimate has stabilized. Across all iterations the algorithm stayed consistent around this value, therefore it is the best estimate for this parameter. 
 
-Between lake and river clams, lake clams have a significantly lower $max_l$ than river clams. This means that the lake clams do not grow as long as river clams. 
+Between lake and river clams, lake clams have a significantly lower $max\_l$ than river clams. This means that the lake clams do not grow as long as river clams. 
 
 This plot below illustrates the results from the algorithm for the estimation of $k$ for river clams. 
 ```{r, echo = FALSE}
 river_k_line
 ```
-The algorithm 
+This graph exhibits an atypical “blocking” pattern compared to the others. This occurs because the algorithm rarely accepts new values of $k$. In most cases, proposed updates do not improve the model, so they are rejected. As a result, the value of $k$ remains unchanged across many iterations, producing the distinct block-like appearance in the graph. The late convergence suggests that a different starting value for $k$ should be used.
 
 This plot below illustrates the results from the algorithm for the estimation of $k$ for lake clams. 
 ```{r, echo = FALSE}
 lakes_k_line
 ```
-The algorithm converged at about 0.27, meaning this is the algorithm's estimation for the $kl$ parameter for lake clams in the growth model. The algorithm stays relatively stable around this value, demonstrating that it converged at 0.27. 
+The algorithm converged at about 0.3, meaning this is the algorithm's estimation for the $k$ parameter for lake clams in the growth model. The algorithm stays relatively stable around this value, demonstrating that it converged at 0.3. 
 
-This plot below 
+This histogram below illustrates the frequency at which values for $max\_l$ were accepted by the algorithm for river clams. 
 ```{r, echo = FALSE}
 river_maxl_hist
 ```
+The most frequently accepted value is in the mid-80s, which aligns with our results from the line graph illustrate river clam's $max\_l$ results. The data is relatively normally distributed with no skew. 
 
+This histogram below illustrates the frequency at which values for $max\_l$ were accepted by the algorithm for lake clams. 
 ```{r, echo = FALSE}
 lakes_maxl_hist
 ```
+This distribution is approximately normal, with a peak around 56, which represents the most frequently accepted value. The symmetric, bell-shaped form suggests that the algorithm converged relatively early and remained stable throughout the iterations. 
 
+This histogram below illustrates the frequency at which values for $k$ were accepted by the algorithm for river clams. 
 ```{r, echo = FALSE}
 river_k_hist
 ```
 
+This distribution is approximately normal but deviates from a traditional bell-shaped curve It exhibits a prominent central peak around 0.1, indicating that 0.1 is the most frequently accepted value for k. However, the overall shape is irregular.
+
+This atypical shape is caused by the low acceptance rate of k in the algorithm, as shown by the blocking pattern in the prior line plot. Because the algorithm is not accepting new k values, the algorithm reuses the same values for longer period of time, causing a concentration of accepted values at 0.1. 
+
+This histogram below illustrates the frequency at which values for $k$ were accepted by the algorithm for lake clams. 
 ```{r, echo = FALSE}
 lakes_k_hist
 ```
+This distribution is relatively normal with the peak around 0.27, which is consistent with the other results for lake clam's $k$ parameter. Specifically, the lack of skewness indicate that the burn-in period was small, meaning the algorithm stabilized early and produce consistent estimates across iterations. 
 
-
+This table illustrates the median parameter estimates for the growth model for both lake and river clams as found by the algorithm. 
 ```{r, echo = FALSE}
 results_river <- plot_df_river |>
   summarise(median_l = median(max_l),
@@ -1017,20 +1045,25 @@ results <- bind_rows(results_lake, results_river)
 pander(results, caption = "Parameter Estimates for Lakes and Rivers")
 ```
 
+These results summarize the median parameter estimates for the growth curve between lake and river clams. They highlight key difference in growth between the two environments. 
 
-##Conclusions and Discussion:
+For lake clams, the median $max\_l$ is much smaller than the $max\_l$ for river clams. However, $k$ is larger for lake clams than river clams. These results indicate that river clams grow to longer lengths when compared to lake clams. But, lake clams grow quicker and can reach their maximum length in a smaller amount of time. 
+
+The variability between lake and river clams are also very different. Lake clams have much more variability in their size then river clams. This means that river clams length and growth are most consistent between each other than lake clams. 
+
+## Conclusions and Discussion
 
 River clams grow to longer overall lengths than lake clams, suggesting that environmental conditions in river aquatic systems that are more favorable for long term growth than lake environments. This could be due to currents, food availability, or acidity. Clam shells are made up of calcium carbonate, which can dissolve in acidic water. Lakes are more acidic than rivers, so one theory suggests that lake clams shells are dissolving as they are growing, explaining the smaller length. Another suggestion is that as filter feeders, clams rely on the water to pass nutrients by them. Since rivers have more aquatic movement, river clams have access to more food, allowing them to grow more. 
 
-However, lake clams reach their asymptotic length approximately twice as fast as river clams. This means that they stop growing sooner and reach their maximum length quicker. This suggests that lake environments may support quick early development, but not long-term growth. 
+However, lake clams reach their asymptotic length approximately three times as fast as river clams. This means that they stop growing sooner and reach their maximum length quicker. This suggests that lake environments may support quick early development, but not long-term growth. Overall, these results suggest a trade-off between growth rate and final size: lake clams grow quickly but remain smaller, while river clams grow more slowly but reach larger sizes.
 
-##Further Study:
+## Further Study
 
 There are possible extensions of this study. First, would be to explicitly account for the uncertainty in timing. Currently, the model assumes that the first growth period aligns with the first yer of growth. This could be addresses by adding additional parameters into the model and algorithm. 
 
 Another extension would be to expand the algorithm so that it estimates parameters for every single location individually. This would allow for study and comparison of individual locations. Using this, you could study which lake or river is the best or worst at supporting clam growth. This approach would look into environmental differences more deeply. 
 
-##References:
+## References
 
 - Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! An introduction to applied Bayesian modeling. https://www.bayesrulesbook.com/
 
@@ -1038,8 +1071,8 @@ Another extension would be to expand the algorithm so that it estimates paramete
 
 - Thank you to Dr. Judith Nagel-Myers for letting me use her data. 
 
-##Appendix##
-```{r, echo = FALSE}
+## Appendix
+```{r}
 # get and read data
 clams <- read_csv("data/clams_clean.csv")
 covariate_data <- read_excel("data/covariate_data.xlsx")
@@ -1165,7 +1198,7 @@ plot_df_river <- tibble(iter = 1:niter, max_l = max_l_store, k = k_store, b = b_
                   sigma2_store) |> filter(iter > 2000)
 ```
 
-```{r, echo = FALSE}
+```{r}
 # Lakes
 
 # get and read data
